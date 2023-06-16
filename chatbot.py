@@ -2,42 +2,57 @@ import os
 import discord
 import openai
 from discord import Intents
+from dotenv import load_dotenv
+import sys
+import argparse
 
-# set the OpenAI's API key and base URL
-openai.api_key = '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'
-openai.api_base = 'http://127.0.0.1:5002/v1'
+load_dotenv()
 
-# initialize discord client
-intents = Intents.default()
-intents.messages = True
-intents.message_content = True
-client2 = discord.Client(intents=intents)
+dm_discord_api_key = os.getenv('DM_DISCORD_API_KEY')
+dm_openai_api_key = os.getenv('DM_OPENAI_API_KEY')
+p1_discord_api_key = os.getenv('P1_DISCORD_API_KEY')
+p1_openai_api_key = os.getenv('P1_OPENAI_API_KEY')
+def start_bot(discord_api_key, openai_api_key, bot_role, bot_model):
+    # set the OpenAI's API key and base URL
+    openai.api_key = openai_api_key
+    openai.api_base = 'http://127.0.0.1:5002/v1'
 
-# define what to do on new message
-@client2.event
-async def on_message(message):
-    # don't respond to ourselves
-    print(f"message received from {message.author} in {message.channel}")
-    if message.author == client2.user:
-        print(f"i see that it was sent by me!")
-        return
-    if message.content.startswith('!chat1'):
-        print(f"message from {message.author} starts with !chat1")
-        # get the text after the "!chat" command
-        message_content = message.content[len('!chat1 '):]
+    # initialize discord client
+    intents = Intents.default()
+    intents.messages = True
+    intents.message_content = True
+    client = discord.Client(intents=intents)
 
-        # use openai API to get a response
-        response = openai.ChatCompletion.create(
-            model="ehartford_WizardLM-13B-Uncensored",  # or "text-curie-003"
-            messages=[
-                {"role": "system", "content": "You are the supreme Dungeon Master, and host games of dungeons and dragons.  you guide the adventure and roll dice often to find out what happens next"},
-                {"role": "user", "content": message_content}
-            ]
-        )
+    @client.event
+    async def on_message(message):
+        if message.author == client.user:
+            return
+        if message.content.startswith('!chat'):
+            message_content = message.content[len('!chat '):]
+            response = openai.ChatCompletion.create(
+                model=bot_model, 
+                messages=[
+                    {"role": "system", "content": bot_role},
+                    {"role": "user", "content": message_content}
+                ]
+            )
+            
+            response_text = "!chat " + response['choices'][0]['message']['content'].replace('</s>', '')
+            await message.channel.send(response_text)
+            return
+
+    client.run(discord_api_key)
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Choose which bot to start.")
+    parser.add_argument("bot_type", type=str, choices=["DM", "P1"],
+                        help="The type of bot to start (DM or P1).")
+
+    args = parser.parse_args()
+
+    if args.bot_type == "DM":
+        start_bot(dm_discord_api_key, dm_openai_api_key, "You are the supreme Dungeon Master...", "ehartford_WizardLM-13B-Uncensored")
+    elif args.bot_type == "P1":
+        start_bot(p1_discord_api_key, p1_openai_api_key, "You are a helpful assistant.", "ehartford_WizardLM-13B-Uncensored")
         
-        # send the message back
-        response_text = "!chat2 " + response['choices'][0]['message']['content'].replace('</s>', '')
-        await message.channel.send(response_text)
-        return
-# login to discord
-client2.run('MTExNDY1MjczNjA2ODI3NjMxNA.GOmaNp.K8KatEpoZ0A9Me6vq5wIYp-WM4vuzipluO1FfY')
+
