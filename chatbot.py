@@ -23,23 +23,51 @@ def start_bot(discord_api_key, openai_api_key, role_description, bot_model):
     intents.message_content = True
     client = discord.Client(intents=intents)
 
-    @client.event
-    async def on_message(message):
-        if message.author == client.user:
-            return
-        if message.content.startswith('!chat'):
-            message_content = message.content[len('!chat '):]
-            response = openai.ChatCompletion.create(
-                model=bot_model, 
-                messages=[
-                    {"role": "system", "content": bot_role},
-                    {"role": "user", "content": message_content}
-                ]
-            )
-            
-            response_text = "!chat " + response['choices'][0]['message']['content'].replace('</s>', '')
-            await message.channel.send(response_text)
-            return
+    @client2.event
+async def on_message(message):
+    # Don't respond to ourselves
+    print(f"message received from {message.author} in {message.channel}")
+    if message.author == client2.user:
+        print(f"i see that it was sent by me!")
+        return
+
+    if message.content.startswith('!chat1'):
+        print(f"message from {message.author} starts with !chat1")
+
+        # Get the text after the "!chat" command
+        message_content = message.content[len('!chat1 '):]
+
+        # Use openai API to get a response
+        response = openai.ChatCompletion.create(
+            model="ehartford_WizardLM-13B-Uncensored",
+            messages=[
+                {"role": "system", "content": BOT_ROLE},
+                {"role": "user", "content": message_content}
+            ]
+        )
+        
+        # Send the message back
+        response_text = "!chat2 " + response['choices'][0]['message']['content'].replace('</s>', '')
+        await message.channel.send(response_text)
+
+        # Now, send a /draw command to the channel, with the AI response as the input.
+        # First, we need to transform the text into an image description.
+        image_prompt_response = openai.ChatCompletion.create(
+            model="text-davinci-003", # or another model that's suitable for this task
+            messages=[
+                {"role": "system", "content": "You are a creative AI. Translate the following text into an image description that captures its mood and actions. it should be in a fantasy setting. it may look like early dungeons and dragons art. whimsicilal is ok."},
+                {"role": "user", "content": response['choices'][0]['message']['content'].replace('</s>', '')}
+            ]
+        )
+
+        # Extract the image prompt from the AI's response
+        image_prompt = image_prompt_response['choices'][0]['message']['content'].replace('</s>', '')
+
+        # Send a /draw command to the channel, with the image description as the input.
+        draw_command = "/draw " + image_prompt
+        await message.channel.send(draw_command)
+
+        return
 
     client.run(discord_api_key)
 
