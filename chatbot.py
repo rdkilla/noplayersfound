@@ -4,7 +4,11 @@ import openai
 from discord import Intents
 from dotenv import load_dotenv
 import sys
-import argparse
+import requests
+import logging
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)  # Change this to logging.DEBUG if you want to see all messages
 
 load_dotenv()
 BOT_ROLE = "You are a large language model acting as the Dungeon Master for a game of Dungeons & Dragons, following the Old-School Essentials rules. Your task is to guide the player through a compelling narrative, determine outcomes based on dice rolls, and ensure the game's pace and engagement remain high. Using a range of dice (d4, d6, d8, d10, d12, d20), you'll decide outcomes for actions such as attacks, saving throws, and ability checks. Remember, balance is key; alternate between tension and release, successes and setbacks to keep the player engaged. The player is in a medieval fantasy world on a quest to recover a stolen artifact, the 'Star of Azuris', from the evil sorcerer, Xanathar. Starting in the tranquil town of Windhaven, they'll journey through the dangerous Darkwood Forest rumored to house Xanathar's hideout. Your interactions with the player should be directed towards progressing the story. Avoid open-ended questions such as 'Is there anything else I can help you with?' or 'Do you have any questions?' Instead, ask specific questions that drive the narrative forward. Begin the adventure and ensure a dynamic, enjoyable experience filled with challenges and surprises."
@@ -12,6 +16,9 @@ dm_discord_api_key = os.getenv('DM_DISCORD_API_KEY')
 dm_openai_api_key = os.getenv('DM_OPENAI_API_KEY')
 p1_discord_api_key = os.getenv('P1_DISCORD_API_KEY')
 p1_openai_api_key = os.getenv('P1_OPENAI_API_KEY')
+
+
+
 def start_bot(discord_api_key, openai_api_key, role_description, bot_model):
     # set the OpenAI's API key and base URL
     openai.api_key = openai_api_key
@@ -23,11 +30,13 @@ def start_bot(discord_api_key, openai_api_key, role_description, bot_model):
     intents.message_content = True
     client = discord.Client(intents=intents)
 
-    @client2.event
+@client.event
 async def on_message(message):
     # don't respond to ourselves
     if message.author == client.user:
         return
+
+    logging.info(f"Received message from {message.author}: {message.content}")
 
     # fetch current player hit points from storage
     player_hp = get_hit_points(message.author)
@@ -46,9 +55,13 @@ async def on_message(message):
         
         damage_taken = event_assessment['choices'][0]['text'].strip().lower()
 
+        logging.info(f"Damage assessment result: {damage_taken}")
+
         if damage_taken == 'yes':
             # calculate damage
             damage = random.randint(1, 8)  # roll a d8 for damage
+
+            logging.info(f"Damage taken: {damage}")
 
             # update hit points
             player_hp = max(0, player_hp - damage)
@@ -68,20 +81,8 @@ async def on_message(message):
         response_text = response['choices'][0]['message']['content'].replace('</s>', '')
         await message.channel.send(response_text)
 
+        logging.info(f"Sent message: {response_text}")
+
         return
 
     client.run(discord_api_key)
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Choose which bot to start.")
-    parser.add_argument("bot_type", type=str, choices=["DM", "P1"],
-                        help="The type of bot to start (DM or P1).")
-
-    args = parser.parse_args()
-
-    if args.bot_type == "DM":
-        start_bot(dm_discord_api_key, dm_openai_api_key, "You are a large language model acting as the Dungeon Master for a game of Dungeons & Dragons, following the Old-School Essentials rules. Your task is to guide the player through a compelling narrative, determine outcomes based on dice rolls, and ensure the game's pace and engagement remain high. Using a range of dice (d4, d6, d8, d10, d12, d20), you'll decide outcomes for actions such as attacks, saving throws, and ability checks. Remember, balance is key; alternate between tension and release, successes and setbacks to keep the player engaged. The player is in a medieval fantasy world on a quest to recover a stolen artifact, the 'Star of Azuris', from the evil sorcerer, Xanathar. Starting in the tranquil town of Windhaven, they'll journey through the dangerous Darkwood Forest rumored to house Xanathar's hideout. Your interactions with the player should be directed towards progressing the story. Avoid open-ended questions such as 'Is there anything else I can help you with?' or 'Do you have any questions?' Instead, ask specific questions that drive the narrative forward. Begin the adventure and ensure a dynamic, enjoyable experience filled with challenges and surprises.", "ehartford_WizardLM-13B-Uncensored")
-    elif args.bot_type == "P1":
-        start_bot(p1_discord_api_key, p1_openai_api_key, "You are a helpful assistant.", "ehartford_WizardLM-13B-Uncensored")
-        
-
