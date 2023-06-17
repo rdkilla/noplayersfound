@@ -4,22 +4,33 @@ import openai
 from discord import Intents
 from dotenv import load_dotenv
 import sys
-import requests
-import logging
-
-# Set up logging
-logging.basicConfig(level=logging.INFO)  # Change this to logging.DEBUG if you want to see all messages
 
 load_dotenv()
-BOT_ROLE = "You are a large language model acting as the Dungeon Master for a game of Dungeons & Dragons, following the Old-School Essentials rules. Your task is to guide the player through a compelling narrative, determine outcomes based on dice rolls, and ensure the game's pace and engagement remain high. Using a range of dice (d4, d6, d8, d10, d12, d20), you'll decide outcomes for actions such as attacks, saving throws, and ability checks. Remember, balance is key; alternate between tension and release, successes and setbacks to keep the player engaged. The player is in a medieval fantasy world on a quest to recover a stolen artifact, the 'Star of Azuris', from the evil sorcerer, Xanathar. Starting in the tranquil town of Windhaven, they'll journey through the dangerous Darkwood Forest rumored to house Xanathar's hideout. Your interactions with the player should be directed towards progressing the story. Avoid open-ended questions such as 'Is there anything else I can help you with?' or 'Do you have any questions?' Instead, ask specific questions that drive the narrative forward. Begin the adventure and ensure a dynamic, enjoyable experience filled with challenges and surprises."
+
 dm_discord_api_key = os.getenv('DM_DISCORD_API_KEY')
 dm_openai_api_key = os.getenv('DM_OPENAI_API_KEY')
 p1_discord_api_key = os.getenv('P1_DISCORD_API_KEY')
 p1_openai_api_key = os.getenv('P1_OPENAI_API_KEY')
+BOT_ROLE = """
+You are an AI trained to act as a Dungeon Master for a game of Dungeons & Dragons. Your primary role is to create a dynamic, immersive gaming experience for the players. As the Dungeon Master, you are the architect of the game world and the driving force behind the narrative. Your responsibilities include:
+
+1. **Describing the Environment:** Whenever the players enter a new location, describe it in vivid detail, invoking all senses to create a vivid mental image. This includes the sights, sounds, smells, and even the weather of the environment.
+
+2. **Role-Playing Non-Player Characters (NPCs):** You embody every character that the players interact with, from the humble tavern owner to the villainous dragon. You control their actions, speak their words, and portray their personalities and motivations.
+
+3. **Facilitating Player Actions:** When players declare their actions, you must determine the outcomes based on the game rules and dice rolls. Be sure to explain the outcomes in a narrative way to enhance immersion. 
+
+4. **Managing Combat:** You are responsible for running the game's combat encounters. This includes controlling the actions of the enemies, describing the outcomes of player actions, and managing the turn order.
+
+5. **Guiding the Story:** Keep the story moving forward by providing plot hooks, hints, and challenges. Ensure that there are always clear objectives for the players to pursue.
+
+6. **Adapting to Player Decisions:** Be prepared to improvise and adapt the story based on the decisions of the players. Their choices should have meaningful impacts on the narrative.
+
+Remember, your goal is to ensure a fun, engaging experience for the players. Balance challenging encounters with moments of victory and progression to keep the game exciting and rewarding. Now, let's begin the adventure...
+"""
 
 
-
-def start_bot(discord_api_key, openai_api_key, role_description, bot_model):
+def start_bot(discord_api_key, openai_api_key, bot_role, bot_model):
     # set the OpenAI's API key and base URL
     openai.api_key = openai_api_key
     openai.api_base = 'http://127.0.0.1:5002/v1'
@@ -30,59 +41,61 @@ def start_bot(discord_api_key, openai_api_key, role_description, bot_model):
     intents.message_content = True
     client = discord.Client(intents=intents)
 
-@client.event
-async def on_message(message):
-    # don't respond to ourselves
-    if message.author == client.user:
-        return
+    @client.event
 
-    logging.info(f"Received message from {message.author}: {message.content}")
+    async def on_message(message):
+    # Don't respond to ourselves
+        print(f"message received from {message.author} in {message.channel}")
+        if message.author == client.user:
+            print(f"i see that it was sent by me!")
+            return
 
-    # fetch current player hit points from storage
-    player_hp = get_hit_points(message.author)
+        if message.content.startswith('!chat1'):
+            print(f"message from {message.author} starts with !chat1")
 
-    if message.content.startswith('!chat'):
-        # get the text after the "!chat" command
-        message_content = message.content[len('!chat '):]
+            # Get the text after the "!chat" command
+            message_content = message.content[len('!chat1 '):]
 
-        # use openai API to assess the event in the chat message
-        event_assessment = openai.Completion.create(
-            engine="text-davinci-003",
-            prompt=f"{message_content}\n\nDid the player take any damage?",
-            temperature=0.5,
-            max_tokens=50
-        )
-        
-        damage_taken = event_assessment['choices'][0]['text'].strip().lower()
+            # Use openai API to get a response
+            response = openai.ChatCompletion.create(
+                model="ehartford_WizardLM-13B-Uncensored",
+                messages=[
+                    {"role": "system", "content": BOT_ROLE},
+                    {"role": "user", "content": message_content}
+                ]
+            )
+            
+            # Send the message back
+            response_text = "!chat2 " + response['choices'][0]['message']['content'].replace('</s>', '')
+            await message.channel.send(response_text)
 
-        logging.info(f"Damage assessment result: {damage_taken}")
+            # Now, send a /draw command to the channel, with the AI response as the input.
+            # First, we need to transform the text into an image description.
+            image_prompt_response = openai.ChatCompletion.create(
+                model="text-davinci-003", # or another model that's suitable for this task
+                messages=[
+                    {"role": "system", "content": "You are a creative AI. Translate the following text into an image description that captures its mood and actions. it should have a dark fantasy setting"},
+                    {"role": "user", "content": response['choices'][0]['message']['content'].replace('</s>', '')}
+                ]
+            )
 
-        if damage_taken == 'yes':
-            # calculate damage
-            damage = random.randint(1, 8)  # roll a d8 for damage
+            # Extract the image prompt from the AI's response
+            image_prompt = image_prompt_response['choices'][0]['message']['content'].replace('</s>', '')
 
-            logging.info(f"Damage taken: {damage}")
-
-            # update hit points
-            player_hp = max(0, player_hp - damage)
-            set_hit_points(message.author, player_hp)
-
-        # now get the response for the player's chat message
-        response = openai.ChatCompletion.create(
-            model="text-davinci-003",
-            messages=[
-                {"role": "system", 
-                "content": f"You are a helpful assistant. The player has {player_hp} hit points."},
-                {"role": "user", "content": message_content}
-            ]
-        )
-        
-        # send the message back
-        response_text = response['choices'][0]['message']['content'].replace('</s>', '')
-        await message.channel.send(response_text)
-
-        logging.info(f"Sent message: {response_text}")
+            # Send a /draw command to the channel, with the image description as the input.
+            draw_command = "/draw " + image_prompt
+            await message.channel.send(draw_command)
 
         return
 
     client.run(discord_api_key)
+
+if __name__ == "__main__":
+    bot_type = input("Enter bot type (DM or P1): ")
+    if bot_type == "DM":
+        start_bot(dm_discord_api_key, dm_openai_api_key, "You are the supreme Dungeon Master...", "ehartford_WizardLM-13B-Uncensored")
+    elif bot_type == "P1":
+        start_bot(p1_discord_api_key, p1_openai_api_key, "You are a helpful assistant.", "text-davinci-003")
+    else:
+        print("Invalid bot type.")
+        sys.exit(1)
