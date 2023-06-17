@@ -22,16 +22,8 @@ BOT_ROLE = """
 """
 
 def save_base64_image(image_data, filename):
-    """
-    Save base64 encoded image data to a file.
-    
-    :param image_data: Base64 encoded image data.
-    :param filename: Name of the file to save the image as.
-    """
-    bytes_image_data = bytes(image_data)
-    decoded_data = base64.b64decode(bytes_image_data)
-    image = Image.open(BytesIO(decoded_data))
-    image.save(filename)
+    with open(filename, "wb") as fh:
+        fh.write(base64.b64decode(image_data))
 def start_bot(discord_api_key, openai_api_key, bot_role, bot_model):
     openai.api_key = openai_api_key
     openai.api_base = 'http://127.0.0.1:5002/v1'
@@ -79,7 +71,7 @@ def start_bot(discord_api_key, openai_api_key, bot_role, bot_model):
             async with session.post(API_URL, json=data) as resp:
                 image_response = await resp.json()
                 #print(image_response)
-                image_data = image_response['images']
+                image_data = image_response['images'][0]
                 filename = 'generated_image.png'
                 save_base64_image(image_data, filename)
                 await message.channel.send(file=discord.File(filename))
