@@ -1,8 +1,10 @@
 # noplayersfound
 NoPlayersFound Discord Bot
+
 NoPlayersFound is a Discord bot that leverages GPT-4 and AI image generation technologies to create a dynamic and interactive experience. The bot acts as a Dungeon Master in a D&D game and creates visual representations of the game scenes.
 
 Features
+
   -Text-based role-play as a Dungeon Master.
   
   -Conversion of text to specific image prompts.
