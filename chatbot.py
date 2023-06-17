@@ -1,4 +1,5 @@
 import os
+import time
 import discord
 import openai
 from discord import Intents, File
@@ -38,6 +39,7 @@ def start_bot(discord_api_key, openai_api_key, bot_role, bot_model):
             return
         session = aiohttp.ClientSession()
         if message.content.startswith('!chat'):
+            start_time = time.time()  # time when request started
             message_content = message.content[len('!chat '):]
             response = openai.ChatCompletion.create(
                 model=bot_model, 
@@ -54,7 +56,7 @@ def start_bot(discord_api_key, openai_api_key, bot_role, bot_model):
             image_prompt_response = openai.ChatCompletion.create(
                 model="text-davinci-003",
                 messages=[
-                    {"role": "system", "content": "You are an assistant that converts text to an image prompt. take the input and describe where the scene is taking place and keep it in a dark fantasy setting"},
+                    {"role": "system", "content": "You are an image promt generator, take the following input string and describe some aspect of it in detail for image generation. give lots of descriptions of shapes and colors and foreground and background"},
                     {"role": "user", "content": response_text}
                 ]
             )
@@ -76,6 +78,10 @@ def start_bot(discord_api_key, openai_api_key, bot_role, bot_model):
                 save_base64_image(image_data, filename)
                 await message.channel.send(file=discord.File(filename))
                 await session.close() 
+                end_time = time.time()  # time when request completed
+
+                elapsed_time = end_time - start_time
+                print(f"Elapsed time: {elapsed_time} seconds")  # print the elapsed time
     client.run(discord_api_key)
 
 if __name__ == "__main__":
