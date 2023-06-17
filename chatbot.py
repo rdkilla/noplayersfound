@@ -66,7 +66,7 @@ def start_bot(discord_api_key, openai_api_key, bot_role, bot_model):
             # Create the data for the POST request
             data = {
                 'prompt': image_prompt,
-                'steps': 40,  # modify as needed
+                'steps': 22,  # modify as needed
             }
 
             # Send the POST request
@@ -82,6 +82,7 @@ def start_bot(discord_api_key, openai_api_key, bot_role, bot_model):
 
                 elapsed_time = end_time - start_time
                 print(f"Elapsed time: {elapsed_time} seconds")  # print the elapsed time
+                await session.close() 
     client.run(discord_api_key)
 
 if __name__ == "__main__":
