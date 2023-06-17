@@ -81,8 +81,10 @@ def start_bot(discord_api_key, openai_api_key, bot_role, bot_model):
                 end_time = time.time()  # time when request completed
 
                 elapsed_time = end_time - start_time
-                print(f"Elapsed time: {elapsed_time} seconds")  # print the elapsed time
-                await session.close() 
+                
+                await session.close()
+            print(f"Elapsed time: {elapsed_time} seconds")  # print the elapsed time    
+            await session.close() 
     client.run(discord_api_key)
 
 if __name__ == "__main__":
