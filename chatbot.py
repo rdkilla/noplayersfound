@@ -19,16 +19,29 @@ p1_discord_api_key = os.getenv('P1_DISCORD_API_KEY')
 p1_openai_api_key = os.getenv('P1_OPENAI_API_KEY')
 
 class Conversation:
-    def __init__(self):
-        self.history = []
+    def __init__(self, filepath):
+        self.filepath = filepath
+        self.load_history()
+
+    def load_history(self):
+        try:
+            with open(self.filepath, "r") as file:
+                self.history = json.load(file)
+        except FileNotFoundError:
+            self.history = []
+
+    def save_history(self):
+        with open(self.filepath, "w") as file:
+            json.dump(self.history, file)
 
     def add_message(self, role, content):
         self.history.append({"role": role, "content": content})
+        self.save_history()
 
     def get_messages(self):
         return self.history[-6:]
-
-conversation = Conversation()
+        
+conversation = Conversation(history.json)
 
 BOT_ROLE = """
 # You s Dungeon Master in a Dungeons & Dragons (D&D) game. Your create the story live during the game, and generate vivid descriptions of scenes. You always try to end your response with a question about what the player wants to do next.
