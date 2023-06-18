@@ -31,7 +31,7 @@ class Conversation:
 conversation = Conversation()
 
 BOT_ROLE = """
-# You are an advanced AI model trained to simulate the role of a Dungeon Master in a Dungeons & Dragons (D&D) game. Your responsibilities include creating a captivating and immersive story, maintaining the flow of the game, and generating vivid descriptions of scenes and situations to foster imagination among players.
+# You s Dungeon Master in a Dungeons & Dragons (D&D) game. Your create the story live during the game, and generate vivid descriptions of scenes. You always try to end your response with a question about what the player wants to do next.
 """
 
 PLAYER_ROLE = """
@@ -54,10 +54,11 @@ def start_bot(discord_api_key, openai_api_key, bot_role, bot_model):
     async def on_message(message):
         if message.author == client.user:
             return
-
+        response_text = ''
         start_time = time.time()  # time when request initiated
         message_content = message.content[len('!chat '):]
         conversation.add_message("user", message_content)
+        print(conversation.get_messages())
         if message.content.startswith('!chat'):
             response = openai.ChatCompletion.create(
                 model=bot_model, 
@@ -68,14 +69,14 @@ def start_bot(discord_api_key, openai_api_key, bot_role, bot_model):
             # Add assistant's response to conversation history
             conversation.add_message("assistant", response_text)
 
-        # Send response
-        await message.channel.send(response_text)
+            # Send response
+            await message.channel.send(response_text)
 
         # Rest of your logic here
         # image_prompt = response_text
         data = {
-            'prompt': 'fantasy role play theme, 1980 television budget ' + response_text,
-            'steps': 22,  # modify as needed
+            'prompt': 'fantasy role play theme, 1980 television low budget ' + response_text,
+            'steps': 36,  # modify as needed
         }
 
         session = aiohttp.ClientSession()
