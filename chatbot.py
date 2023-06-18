@@ -26,7 +26,7 @@ class Conversation:
         self.history.append({"role": role, "content": content})
 
     def get_messages(self):
-        return self.history
+        return self.history[-6:]
 
 conversation = Conversation()
 
@@ -52,14 +52,13 @@ def start_bot(discord_api_key, openai_api_key, bot_role, bot_model):
 
     @client.event
     async def on_message(message):
+        response_text=''
         if message.author == client.user:
             return
-        response_text = ''
         start_time = time.time()  # time when request initiated
         message_content = message.content[len('!chat '):]
-        conversation.add_message("user", message_content)
-        print(conversation.get_messages())
         if message.content.startswith('!chat'):
+            conversation.add_message("user", message_content)
             response = openai.ChatCompletion.create(
                 model=bot_model, 
                 messages=conversation.get_messages()
@@ -72,21 +71,19 @@ def start_bot(discord_api_key, openai_api_key, bot_role, bot_model):
             # Send response
             await message.channel.send(response_text)
 
-        # Rest of your logic here
-        # image_prompt = response_text
-        data = {
-            'prompt': 'fantasy role play theme, 1980 television low budget ' + response_text,
-            'steps': 36,  # modify as needed
-        }
+            data = {
+            'prompt': 'fantasy role play theme 1980 television low budget' + response_text,
+            'steps': 22,  # modify as needed
+            }
 
-        session = aiohttp.ClientSession()
+            session = aiohttp.ClientSession()
         # Send the POST request
-        async with session.post(API_URL, json=data) as resp:
-            image_response = await resp.json()
-            image_data = image_response['images'][0]
-            filename = 'generated_image.png'
-            save_base64_image(image_data, filename)
-            await message.channel.send(file=discord.File(filename))
+            async with session.post(API_URL, json=data) as resp:
+                image_response = await resp.json()
+                image_data = image_response['images'][0]
+                filename = 'generated_image.png'
+                save_base64_image(image_data, filename)
+                await message.channel.send(file=discord.File(filename))
             end_time = time.time()  # time when request completed
             elapsed_time = end_time - start_time
             await session.close()
