@@ -94,7 +94,7 @@ def start_bot(discord_api_key, openai_api_key, bot_role, bot_model):
             image_prompt = response_text
             # Create the data for the POST request
             data = {
-                'prompt': 'fantasy role play theme, early dungeons and dragons artwork (image_prompt)',
+                'prompt': 'fantasy role play theme, 1980 television budget(image_prompt)',
                 'steps': 22,  # modify as needed
             }
 
