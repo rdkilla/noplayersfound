@@ -58,15 +58,15 @@ def start_bot(discord_api_key, openai_api_key, bot_role, bot_model):
         start_time = time.time()  # time when request initiated
         message_content = message.content[len('!chat '):]
         conversation.add_message("user", message_content)
+        if message.content.startswith('!chat'):
+            response = openai.ChatCompletion.create(
+                model=bot_model, 
+                messages=conversation.get_messages()
+            )
+            response_text = response['choices'][0]['message']['content'].replace('</s>', '')
 
-        response = openai.ChatCompletion.create(
-            model=bot_model, 
-            messages=conversation.get_messages()
-        )
-        response_text = response['choices'][0]['message']['content'].replace('</s>', '')
-
-        # Add assistant's response to conversation history
-        conversation.add_message("assistant", response_text)
+            # Add assistant's response to conversation history
+            conversation.add_message("assistant", response_text)
 
         # Send response
         await message.channel.send(response_text)
@@ -94,11 +94,8 @@ def start_bot(discord_api_key, openai_api_key, bot_role, bot_model):
     client.run(discord_api_key)
 
 if __name__ == "__main__":
-    bot_type = input("Enter bot type (DM or P1): ")
-    if bot_type == "DM":
-        start_bot(dm_discord_api_key, dm_openai_api_key, BOT_ROLE, "text-davinci-003")
-    elif bot_type == "P1":
+    bot_type = input("Enter bot type (DM or P1, press Enter for DM): ")
+    if bot_type == "P1":
         start_bot(p1_discord_api_key, p1_openai_api_key, PLAYER_ROLE, "text-davinci-003")
-    else:
-        print("Invalid bot type.")
-        sys.exit(1)
+    else:  # default to DM
+        start_bot(dm_discord_api_key, dm_openai_api_key, BOT_ROLE, "text-davinci-003")
