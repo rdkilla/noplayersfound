@@ -38,6 +38,8 @@ class Conversation:
 
     def add_message(self, role, content):
         self.history.append({"role": role, "content": content})
+        if len(self.history) > 50:  # if more than 50 messages, remove the oldest one
+            del self.history[0]
         self.save_history()  # save after every addition
 
     def get_messages(self):
@@ -87,7 +89,7 @@ def start_bot(discord_api_key, openai_api_key, bot_role, bot_model):
             await message.channel.send(response_text)
 
             data = {
-                'prompt': 'fantasy role play theme 1980 television low budget' + response_text,
+                'prompt': 'fantasy role play theme 1980s low budget' + response_text,
                 'steps': 22,  # modify as needed
             }
 
