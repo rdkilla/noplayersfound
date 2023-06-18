@@ -1,5 +1,6 @@
 import os
 import time
+import json
 import discord
 import openai
 from discord import Intents, File
@@ -19,29 +20,30 @@ p1_discord_api_key = os.getenv('P1_DISCORD_API_KEY')
 p1_openai_api_key = os.getenv('P1_OPENAI_API_KEY')
 
 class Conversation:
-    def __init__(self, filepath):
-        self.filepath = filepath
+    def __init__(self, history_file):
+        self.history_file = history_file
         self.load_history()
 
     def load_history(self):
         try:
-            with open(self.filepath, "r") as file:
+            with open(self.history_file, 'r') as file:
                 self.history = json.load(file)
-        except FileNotFoundError:
+        except (FileNotFoundError, json.JSONDecodeError):
             self.history = []
+            self.save_history()  # create file with empty list if not existent or invalid
 
     def save_history(self):
-        with open(self.filepath, "w") as file:
+        with open(self.history_file, 'w') as file:
             json.dump(self.history, file)
 
     def add_message(self, role, content):
         self.history.append({"role": role, "content": content})
-        self.save_history()
+        self.save_history()  # save after every addition
 
     def get_messages(self):
-        return self.history[-6:]
+        return self.history[-6:]  # get the last 6 messages
         
-conversation = Conversation(history.json)
+conversation = Conversation("history.json")
 
 BOT_ROLE = """
 # You s Dungeon Master in a Dungeons & Dragons (D&D) game. Your create the story live during the game, and generate vivid descriptions of scenes. You always try to end your response with a question about what the player wants to do next.
@@ -85,18 +87,18 @@ def start_bot(discord_api_key, openai_api_key, bot_role, bot_model):
             await message.channel.send(response_text)
 
             data = {
-            'prompt': 'fantasy role play theme 1980 television low budget' + response_text,
-            'steps': 22,  # modify as needed
+                'prompt': 'fantasy role play theme 1980 television low budget' + response_text,
+                'steps': 22,  # modify as needed
             }
 
             session = aiohttp.ClientSession()
-        # Send the POST request
+                # Send the POST request
             async with session.post(API_URL, json=data) as resp:
-                image_response = await resp.json()
-                image_data = image_response['images'][0]
-                filename = 'generated_image.png'
-                save_base64_image(image_data, filename)
-                await message.channel.send(file=discord.File(filename))
+                    image_response = await resp.json()
+                    image_data = image_response['images'][0]
+                    filename = 'generated_image.png'
+                    save_base64_image(image_data, filename)
+                    await message.channel.send(file=discord.File(filename))
             end_time = time.time()  # time when request completed
             elapsed_time = end_time - start_time
             await session.close()
