@@ -3,7 +3,6 @@ import time
 import json
 import discord
 import openai
-import sys
 from gtts import gTTS
 from discord import Intents, File
 from dotenv import load_dotenv
@@ -12,8 +11,7 @@ import aiohttp
 import base64
 from io import BytesIO
 from PIL import Image
-from obswebsocket import obsws,requests
-#import obswebsocket.requests
+
 
 # Replace with your OBS WebSocket host, port, and password
 host = "localhost"
@@ -52,7 +50,7 @@ class Conversation:
         self.save_history()  # save after every addition
 
     def get_messages(self):
-        return self.history[-1:]  # get the last 1 messages
+        return self.history[-3:]  # get the last 2 messages
         
 conversation = Conversation("history.json")
 
@@ -80,7 +78,6 @@ def start_bot(discord_api_key, openai_api_key, bot_role, bot_model, openai_serve
     @client.event
     async def on_message(message):
         response_text=''
-        print(sys.executable)
         start_time = time.time() 
         if message.author == client.user:
             return
@@ -88,15 +85,26 @@ def start_bot(discord_api_key, openai_api_key, bot_role, bot_model, openai_serve
         message_content = message.content[len('!chat '):]
         if message.content.startswith('!chat'):
              # time when request initiatedonversation.add_message("user", message_content)
-            conversation.add_message("assistant", message_content)
             response = openai.ChatCompletion.create(
-                model=bot_model, 
-                messages=conversation.get_messages()
+                model=bot_model,
+                messages=[
+                {"role": "system", "content" : BOT_ROLE},
+                {"role": "user", "content": message_content}
+                ] 
             )
             response_text = response['choices'][0]['message']['content'].replace('</s>', '')
+            # write user message to player.txt
+            with open('player.txt', 'w') as file:
+                file.write(message_content)
 
+            # write bot response to dmaster.txt
+            with open('dmaster.txt', 'w') as file:
+                file.write(response_text)
+
+            # Add assistant's response to conversation history
+            conversation.add_message("assistant", response_text)
             # Generate audio from response text
-            tts = gTTS(text=response_text, lang='en')
+            tts = gTTS(text=response_text, lang='en',tld='co.uk')
             tts.save("response.mp3")  # save audio file
             # Send response
             await message.channel.send(response_text)
@@ -116,27 +124,10 @@ def start_bot(discord_api_key, openai_api_key, bot_role, bot_model, openai_serve
                     await message.channel.send(file=discord.File(filename))
             
             await session.close()
-            # Connect to OBS
-            ws = obsws(host, port, password)
-            ws.connect()
-
-            # Assuming 'MediaSource' is the name of your media source in OBS
-            request = obswebsocket.requests.SetSourceSettings("MediaSource", {
-            "local_file": 'response.mp3'
-            })
-
-            await ws.call(request)
-
-            #Stop and start the media source
-            await ws.call(requests.StopMedia("MediaSource"))
-            await ws.call(requests.RestartMedia("MediaSource"))
-            ws.disconnect()
-            # print the elapsed time    
-
+            end_time = time.time()  # time when request completed
+            elapsed_time = end_time - start_time
+            print(f"Elapsed time: {elapsed_time} seconds")
     client.run(discord_api_key)
-    end_time = time.time()  # time when request completed
-    elapsed_time = end_time - start_time
-    print(f"Elapsed time: {elapsed_time} seconds")
 if __name__ == "__main__":
     bot_type = input("Enter bot type (DM or P1, press Enter for DM): ")
     
@@ -151,6 +142,6 @@ if __name__ == "__main__":
         API_URL = default_api_url 
 
     if bot_type == "P1":
-        start_bot(p1_discord_api_key, p1_openai_api_key, PLAYER_ROLE, "text-davinci-003", openai_server, API_URL)
+        start_bot(p1_discord_api_key, p1_openai_api_key, PLAYER_ROLE, "TheBloke_Wizard-Vicuna-13B-Uncensored-HF", openai_server, API_URL)
     else:  # default to DM
-        start_bot(dm_discord_api_key, dm_openai_api_key, BOT_ROLE, "text-davinci-003", openai_server, API_URL)
+        start_bot(dm_discord_api_key, dm_openai_api_key, BOT_ROLE, "TheBloke_Wizard-Vicuna-13B-Uncensored-HF", openai_server, API_URL)
