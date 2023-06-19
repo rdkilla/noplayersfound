@@ -13,7 +13,7 @@ from PIL import Image
 
 load_dotenv()
 
-API_URL = 'http://127.0.0.1:7861/sdapi/v1/txt2img'  # replace with your actual API URL
+#API_URL = 'http://127.0.0.1:7861/sdapi/v1/txt2img'  # replace with your actual API URL
 dm_discord_api_key = os.getenv('DM_DISCORD_API_KEY')
 dm_openai_api_key = os.getenv('DM_OPENAI_API_KEY')
 p1_discord_api_key = os.getenv('P1_DISCORD_API_KEY')
@@ -43,7 +43,7 @@ class Conversation:
         self.save_history()  # save after every addition
 
     def get_messages(self):
-        return self.history[-6:]  # get the last 6 messages
+        return self.history[-7:]  # get the last 7 messages
         
 conversation = Conversation("history.json")
 
@@ -59,9 +59,10 @@ def save_base64_image(image_data, filename):
     with open(filename, "wb") as fh:
         fh.write(base64.b64decode(image_data))
 
-def start_bot(discord_api_key, openai_api_key, bot_role, bot_model):
+
+def start_bot(discord_api_key, openai_api_key, bot_role, bot_model, openai_server, api_url):
     openai.api_key = openai_api_key
-    openai.api_base = 'http://127.0.0.1:5002/v1'
+    openai.api_base = openai_server  # replace hardcoded URL with dynamic server
     intents = Intents.default()
     intents.messages = True
     intents.message_content = True
@@ -70,11 +71,13 @@ def start_bot(discord_api_key, openai_api_key, bot_role, bot_model):
     @client.event
     async def on_message(message):
         response_text=''
+        
         if message.author == client.user:
             return
-        start_time = time.time()  # time when request initiated
+        
         message_content = message.content[len('!chat '):]
         if message.content.startswith('!chat'):
+            start_time = time.time()  # time when request initiated
             conversation.add_message("user", message_content)
             response = openai.ChatCompletion.create(
                 model=bot_model, 
@@ -95,22 +98,33 @@ def start_bot(discord_api_key, openai_api_key, bot_role, bot_model):
 
             session = aiohttp.ClientSession()
                 # Send the POST request
-            async with session.post(API_URL, json=data) as resp:
+            async with session.post(API_URL, json=data) as resp:  # replace hardcoded API_URL with dynamic api_url
                     image_response = await resp.json()
                     image_data = image_response['images'][0]
                     filename = 'generated_image.png'
                     save_base64_image(image_data, filename)
                     await message.channel.send(file=discord.File(filename))
-            end_time = time.time()  # time when request completed
-            elapsed_time = end_time - start_time
+            
             await session.close()
             print(f"Elapsed time: {elapsed_time} seconds")  # print the elapsed time    
 
     client.run(discord_api_key)
-
+    end_time = time.time()  # time when request completed
+    elapsed_time = end_time - start_time
 if __name__ == "__main__":
     bot_type = input("Enter bot type (DM or P1, press Enter for DM): ")
+    
+    default_openai_server = 'http://127.0.0.1:5002/v1'
+    openai_server = input(f"Enter OpenAI server (press Enter for default {default_openai_server}): ")
+    if openai_server == "":
+        openai_server = default_openai_server 
+
+    default_api_url = 'http://127.0.0.1:7861/sdapi/v1/txt2img'
+    API_URL = input(f"Enter Image Generator API URL (press Enter for default {default_api_url}): ")
+    if API_URL == "":
+        API_URL = default_api_url 
+
     if bot_type == "P1":
-        start_bot(p1_discord_api_key, p1_openai_api_key, PLAYER_ROLE, "text-davinci-003")
+        start_bot(p1_discord_api_key, p1_openai_api_key, PLAYER_ROLE, "text-davinci-003", openai_server, API_URL)
     else:  # default to DM
-        start_bot(dm_discord_api_key, dm_openai_api_key, BOT_ROLE, "text-davinci-003")
+        start_bot(dm_discord_api_key, dm_openai_api_key, BOT_ROLE, "text-davinci-003", openai_server, API_URL)
