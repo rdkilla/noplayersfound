@@ -3,6 +3,8 @@ import time
 import json
 import discord
 import openai
+import sys
+from gtts import gTTS
 from discord import Intents, File
 from dotenv import load_dotenv
 import sys
@@ -10,6 +12,13 @@ import aiohttp
 import base64
 from io import BytesIO
 from PIL import Image
+from obswebsocket import obsws,requests
+#import obswebsocket.requests
+
+# Replace with your OBS WebSocket host, port, and password
+host = "localhost"
+port = 4455
+password = "iFocgin19N6XzK9N"
 
 load_dotenv()
 
@@ -43,7 +52,7 @@ class Conversation:
         self.save_history()  # save after every addition
 
     def get_messages(self):
-        return self.history[-7:]  # get the last 7 messages
+        return self.history[-1:]  # get the last 1 messages
         
 conversation = Conversation("history.json")
 
@@ -71,23 +80,24 @@ def start_bot(discord_api_key, openai_api_key, bot_role, bot_model, openai_serve
     @client.event
     async def on_message(message):
         response_text=''
-        
+        print(sys.executable)
+        start_time = time.time() 
         if message.author == client.user:
             return
         
         message_content = message.content[len('!chat '):]
         if message.content.startswith('!chat'):
-            start_time = time.time()  # time when request initiated
-            conversation.add_message("user", message_content)
+             # time when request initiatedonversation.add_message("user", message_content)
+            conversation.add_message("assistant", message_content)
             response = openai.ChatCompletion.create(
                 model=bot_model, 
                 messages=conversation.get_messages()
             )
             response_text = response['choices'][0]['message']['content'].replace('</s>', '')
 
-            # Add assistant's response to conversation history
-            conversation.add_message("assistant", response_text)
-
+            # Generate audio from response text
+            tts = gTTS(text=response_text, lang='en')
+            tts.save("response.mp3")  # save audio file
             # Send response
             await message.channel.send(response_text)
 
@@ -106,11 +116,27 @@ def start_bot(discord_api_key, openai_api_key, bot_role, bot_model, openai_serve
                     await message.channel.send(file=discord.File(filename))
             
             await session.close()
-            print(f"Elapsed time: {elapsed_time} seconds")  # print the elapsed time    
+            # Connect to OBS
+            ws = obsws(host, port, password)
+            ws.connect()
+
+            # Assuming 'MediaSource' is the name of your media source in OBS
+            request = obswebsocket.requests.SetSourceSettings("MediaSource", {
+            "local_file": 'response.mp3'
+            })
+
+            await ws.call(request)
+
+            #Stop and start the media source
+            await ws.call(requests.StopMedia("MediaSource"))
+            await ws.call(requests.RestartMedia("MediaSource"))
+            ws.disconnect()
+            # print the elapsed time    
 
     client.run(discord_api_key)
     end_time = time.time()  # time when request completed
     elapsed_time = end_time - start_time
+    print(f"Elapsed time: {elapsed_time} seconds")
 if __name__ == "__main__":
     bot_type = input("Enter bot type (DM or P1, press Enter for DM): ")
     
