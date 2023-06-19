@@ -55,7 +55,7 @@ class Conversation:
 conversation = Conversation("history.json")
 
 BOT_ROLE = """
-# You s Dungeon Master in a Dungeons & Dragons (D&D) game. Your create the story live during the game, and generate vivid descriptions of scenes. You always try to end your response with a question about what the player wants to do next.
+# You s Dungeon Master conducting a game. describe events, people, places in great detail to create the world for the player. you give details descriptions of outcomes, movements, attacks, acts of god. You always try to end your response with a question about what the player wants to do next.
 """
 
 PLAYER_ROLE = """
