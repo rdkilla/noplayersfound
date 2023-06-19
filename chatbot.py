@@ -89,7 +89,7 @@ def start_bot(discord_api_key, openai_api_key, bot_role, bot_model, openai_serve
                 model=bot_model,
                 messages=[
                 {"role": "system", "content" : BOT_ROLE},
-                {"role": "user", "content": message_content}
+                {"role": "user", "content":  message_content + "describe all the events that need to take place to advance the story, and set up the events for the next step in the story. replay as the voice of the dungeon master only. DO NOT TELL ME YOU ARE THE DUNGEON MASTER."}
                 ] 
             )
             response_text = response['choices'][0]['message']['content'].replace('</s>', '')
@@ -110,7 +110,7 @@ def start_bot(discord_api_key, openai_api_key, bot_role, bot_model, openai_serve
             await message.channel.send(response_text)
 
             data = {
-                'prompt': 'fantasy role play theme 1980s low budget' + response_text,
+                'prompt': 'fantasy role play theme 1980s low budget ' + response_text,
                 'steps': 22,  # modify as needed
             }
 
