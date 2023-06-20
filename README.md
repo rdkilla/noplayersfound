@@ -1,18 +1,17 @@
-# noplayersfound
-NoPlayersFound Discord Bot
+# 🎲 D&D Oracle: An AI Dungeon Master for Discord 🐉
 
-NoPlayersFound is a Discord bot that leverages GPT-4 and AI image generation technologies to create a dynamic and interactive experience. The bot acts as a Dungeon Master in a D&D game and creates visual representations of the game scenes.
+Welcome to the repository of D&D Oracle, a revolutionary Discord bot that brings your Dungeons & Dragons gaming sessions to the next level. D&D Oracle utilizes the power of OpenAI's GPT-4 model to simulate a highly immersive AI-driven Dungeon Master, elevating your role-play experiences and pushing the boundaries of in-game storytelling.
 
-Features
+## 🧙‍♂️ Journey into the AI's Imaginary Realms 🏰
 
-  -Text-based role-play as a Dungeon Master.
-  
-  -Conversion of text to specific image prompts.
-  
-  -AI image generation to visualize scenes.
-  
-  -Interactive and immersive role-playing experience.
-  
+Engage in gripping adventures and encounter mysterious creatures as the AI Dungeon Master breathes life into your D&D games. Whether you're a noble knight, a cunning rogue, or a wise wizard, your every action influences the unfolding narrative.
+
+Simply input your character's actions or dialogues into the Discord chat, and the AI Dungeon Master will respond with detailed narratives, NPC interactions, and the outcomes of your choices, adding depth and unpredictability to your gaming experience. The D&D Oracle works seamlessly, using natural language processing to understand player inputs and generate the DM's response in real-time.
+
+At present, the AI bot maintains the last 50 messages in the conversation history, enabling a consistent storyline. However, please note that it is currently not designed to handle multiple concurrent games or conversations.
+
+Immerse yourself in this enchanting AI-powered role-play adventure and let the game come alive with D&D Oracle!
+
 Usage
 
   -To interact with the bot, start your message with !chat and then write the scenario or question. The bot will generate a response, create a related image, and post it in the channel.
