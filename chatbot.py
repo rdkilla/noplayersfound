@@ -8,6 +8,7 @@ from discord import Intents, File
 from dotenv import load_dotenv
 import sys
 import aiohttp
+import asyncio
 import base64
 from io import BytesIO
 from PIL import Image
@@ -55,7 +56,7 @@ class Conversation:
 conversation = Conversation("history.json")
 
 BOT_ROLE = """
-# You s Dungeon Master conducting a game. describe events, people, places in great detail to create the world for the player. you give details descriptions of outcomes, movements, attacks, acts of god. You always try to end your response with a question about what the player wants to do next.
+# respond as an advanced AI playing the character of a dungeon master in a perpetual game of dungeons and dragons. describe events, people, places in great detail to create the world for the player. you give details descriptions of outcomes, movements, attacks, acts of god. You always try to end your response with a question about what the player wants to do next.
 """
 
 PLAYER_ROLE = """
@@ -85,13 +86,21 @@ def start_bot(discord_api_key, openai_api_key, bot_role, bot_model, openai_serve
         message_content = message.content[len('!chat '):]
         if message.content.startswith('!chat'):
              # time when request initiatedonversation.add_message("user", message_content)
-            response = openai.ChatCompletion.create(
-                model=bot_model,
-                messages=[
-                {"role": "system", "content" : BOT_ROLE},
-                {"role": "user", "content":  message_content + "describe all the events that need to take place to advance the story, and set up the events for the next step in the story. replay as the voice of the dungeon master only. DO NOT TELL ME YOU ARE THE DUNGEON MASTER."}
-                ] 
-            )
+            # response = openai.ChatCompletion.create(
+                # model=bot_model,
+                # messages=[
+                # {"role": "system", "content" : BOT_ROLE},
+                # {"role": "user", "content":  message_content + "describe all the events that need to take place to advance the story, and set up the events for the next step in the story.be inspired by what you know about OSE but don't tell me about OSE"}
+                # ] 
+            # )
+            loop = asyncio.get_event_loop()
+            response = await loop.run_in_executor(None, lambda: openai.ChatCompletion.create(
+                    model=bot_model,
+                    messages=[
+                        {"role": "system", "content" : BOT_ROLE},
+                        {"role": "user", "content":  message_content + "describe all the events that need to take place to advance the story, and set up the events for the next step in the story.be inspired by what you know about OSE but don't tell me about OSE"}
+                    ] 
+                ))
             response_text = response['choices'][0]['message']['content'].replace('</s>', '')
             # write user message to player.txt
             with open('player.txt', 'w') as file:
