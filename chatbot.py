@@ -95,7 +95,7 @@ def start_bot(discord_api_key, openai_api_key, bot_role, bot_model, openai_serve
             print(f"{last_player_message}")
             response = await loop.run_in_executor(None, lambda: openai.ChatCompletion.create(
                     model=bot_model,
-                    max_tokens=330,
+                    max_tokens=440,
                     chat_prompt_size=6000,
                     messages=[
                         {"role": "system", "content" : bot_role},
