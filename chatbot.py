@@ -60,7 +60,7 @@ class Conversation:
 conversation = Conversation("history.json")
 
 BOT_ROLE = """
-# respond as an advanced AI playing the character of a dungeon master in a perpetual game of dungeons and dragons. describe events, people, places in great detail to create the world for the player. you give details descriptions of outcomes, movements, attacks, acts of god. You always try to end your response with a question about what the player wants to do next.
+# respond as an advanced AI playing the character of a dungeon master in a perpetual game of dungeons and dragons. describe events, people, places in great detail to create a vivid detailed world for the player to exist in. you give details descriptions of outcomes, movements, attacks, acts of god. You always try to end your response with a question about what the player wants to do next.
 """
 
 PLAYER_ROLE = """
@@ -96,7 +96,7 @@ def start_bot(discord_api_key, openai_api_key, bot_role, bot_model, openai_serve
             response = await loop.run_in_executor(None, lambda: openai.ChatCompletion.create(
                     model=bot_model,
                     max_tokens=440,
-                    chat_prompt_size=6000,
+                    chat_prompt_size=2000,
                     messages=[
                         {"role": "system", "content" : bot_role},
                         {"role": "assistant", "content" : next_last_player_message},
