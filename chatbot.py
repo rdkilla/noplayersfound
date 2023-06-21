@@ -66,7 +66,14 @@ BOT_ROLE = """
 PLAYER_ROLE = """
 # You are an advanced AI model simulating a player character in a game of Dungeons & Dragons (D&D). Your role is to engage in the story crafted by the Dungeon Master (DM), respond to the scenarios presented, ask insightful questions, and make decisions that would help your character progress and navigate the challenges of the game world.
 """
-
+async def send_large_message(channel, message_text):
+    if len(message_text) <= 2000:
+        await channel.send(message_text)
+    else:
+        parts = [message_text[i:i+2000] for i in range(0, len(message_text), 2000)]
+        for part in parts:
+            await channel.send(part)
+            
 def save_base64_image(image_data, filename):
     with open(filename, "wb") as fh:
         fh.write(base64.b64decode(image_data))
@@ -92,7 +99,6 @@ def start_bot(discord_api_key, openai_api_key, bot_role, bot_model, openai_serve
             loop = asyncio.get_event_loop()
             last_player_message = conversation.get_last_player()
             next_last_player_message = conversation.get_next_last_player()
-            print(f"{last_player_message}")
             response = await loop.run_in_executor(None, lambda: openai.ChatCompletion.create(
                     model=bot_model,
                     max_tokens=440,
@@ -121,8 +127,8 @@ def start_bot(discord_api_key, openai_api_key, bot_role, bot_model, openai_serve
             tts = gTTS(text=response_text, lang='en',tld='co.uk')
             tts.save("response.mp3")  # save audio file
             # Send response
-            await message.channel.send(response_text)
-
+            await send_large_message(message.channel, response_text)
+            
             data = {
                 'prompt': 'fantasy role play theme 1980s low budget ' + response_text,
                 'steps': 50,  # modify as needed
