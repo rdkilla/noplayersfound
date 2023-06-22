@@ -3,17 +3,20 @@ import time
 import json
 import discord
 import openai
-from gtts import gTTS
-from discord import Intents, File
-from dotenv import load_dotenv
 import sys
 import aiohttp
 import asyncio
 import base64
 from io import BytesIO
 from PIL import Image
+from tiktoken import Tokenizer
+from tiktoken.models import Model
+from gtts import gTTS
+from discord import Intents, File
+from dotenv import load_dotenv
 
-
+# Instantiate a tokenizer
+tokenizer = Tokenizer()
 
 # Replace with your OBS WebSocket host, port, and password
 host = "localhost"
@@ -53,9 +56,9 @@ class Conversation:
 
     def get_messages(self):
         return self.history[-2:]  # get the last 2 messages
-    def get_last_player(self):
+    def get_last_dmaster(self):
         return self.history[-1:][0]['content']  # get last player message content
-    def get_next_last_player(self):
+    def get_next_last_dmaster(self):
         return self.history[-2:][0]['content']  # get last player message content
    
 conversation = Conversation("history.json")
@@ -106,21 +109,27 @@ def start_bot(discord_api_key, openai_api_key, bot_role, bot_model, openai_serve
         message_content = message.content[len('!chat '):]
         if message.content.startswith('!chat'):
             loop = asyncio.get_event_loop()
-            last_player_message = conversation.get_last_player()
-            next_last_player_message = conversation.get_next_last_player()
+            last_dmaster_message = conversation.get_last_dmaster()
+            next_last_dmaster_message = conversation.get_next_last_dmaster()
+            with open('player.txt', 'r') as file:
+                last_player_text = file.read()
             response = await loop.run_in_executor(None, lambda: openai.ChatCompletion.create(
                     model=bot_model,
                     max_tokens=440,
                     chat_prompt_size=2000,
                     messages=[
                         {"role": "system", "content" : bot_role},
-                        {"role": "assistant", "content" : next_last_player_message},
-                        {"role": "assistant", "content" : last_player_message},
+                        {"role": "assistant", "content" : next_last_dmaster_message},
+                        {"role": "user", "content" : last_player_text},
+                        {"role": "assistant", "content" : last_dmaster_message},
                         {"role": "user", "content":  message_content + "describe all the events that need to take place to advance the story, and set up the events for the next step in the story.be inspired by what you know about OSE but don't tell me about OSE"}
                     ]
-                    
                     )   
                 )
+            # Tokenize the text
+            tokens = tokenizer.encode(bot_role + next_last_dmaster_message + last_player_text + last_dmaster_message + messagg_content)                   
+            #   Print the number of tokens
+            print("Number of tokens:", len(tokens))
             response_text = response['choices'][0]['message']['content'].replace('</s>', '')
             # write user message to player.txt
             with open('player.txt', 'w') as file:
