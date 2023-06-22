@@ -14,6 +14,7 @@ from io import BytesIO
 from PIL import Image
 
 
+
 # Replace with your OBS WebSocket host, port, and password
 host = "localhost"
 port = 4455
@@ -73,11 +74,19 @@ async def send_large_message(channel, message_text):
         parts = [message_text[i:i+2000] for i in range(0, len(message_text), 2000)]
         for part in parts:
             await channel.send(part)
+
+
+def create_gif(image_files, output_file, duration):
+    images = [Image.open(image_file) for image_file in image_files]
+    images[0].save(output_file, save_all=True, append_images=images[1:], optimize=False, duration=duration, loop=0)
             
 def save_base64_image(image_data, filename):
     with open(filename, "wb") as fh:
         fh.write(base64.b64decode(image_data))
 
+def split_text_into_thirds(text):
+    third_length = len(text) // 3
+    return text[:third_length], text[third_length:2*third_length], text[2*third_length:]
  
 def start_bot(discord_api_key, openai_api_key, bot_role, bot_model, openai_server, api_url):
     openai.api_key = openai_api_key
@@ -129,20 +138,27 @@ def start_bot(discord_api_key, openai_api_key, bot_role, bot_model, openai_serve
             # Send response
             await send_large_message(message.channel, response_text)
             
-            data = {
-                'prompt': 'fantasy role play theme 1980s low budget ' + response_text,
-                'steps': 50,  # modify as needed
-            }
+            
+            third1, third2, third3 = split_text_into_thirds(response_text)
+            image_files = []
+            for i, third in enumerate([third1, third2, third3]):
+                data = {
+                    'prompt': 'fantasy role play theme 1980s low budget ' + third,
+                    'steps': 50,  # modify as needed
+                }
 
-            session = aiohttp.ClientSession()
+                session = aiohttp.ClientSession()
                 # Send the POST request
-            async with session.post(API_URL, json=data) as resp:  # replace hardcoded API_URL with dynamic api_url
+                async with session.post(API_URL, json=data) as resp:  # replace hardcoded API_URL with dynamic api_url
                     image_response = await resp.json()
                     image_data = image_response['images'][0]
-                    filename = 'generated_image.png'
+                    filename = f'generated_image_{i+1}.png'
                     save_base64_image(image_data, filename)
-                    await message.channel.send(file=discord.File(filename))
-            
+                    image_files.append(filename)
+                    await session.close()
+            gif_filename = 'animated.gif'
+            create_gif(image_files, gif_filename, 1800)  # Duration is in milliseconds
+            await message.channel.send(file=discord.File(gif_filename))
             await session.close()
             end_time = time.time()  # time when request completed
             elapsed_time = end_time - start_time
