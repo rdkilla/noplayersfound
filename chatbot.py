@@ -9,14 +9,9 @@ import asyncio
 import base64
 from io import BytesIO
 from PIL import Image
-from tiktoken import Tokenizer
-from tiktoken.models import Model
 from gtts import gTTS
 from discord import Intents, File
 from dotenv import load_dotenv
-
-# Instantiate a tokenizer
-tokenizer = Tokenizer()
 
 # Replace with your OBS WebSocket host, port, and password
 host = "localhost"
@@ -108,6 +103,7 @@ def start_bot(discord_api_key, openai_api_key, bot_role, bot_model, openai_serve
         
         message_content = message.content[len('!chat '):]
         if message.content.startswith('!chat'):
+            print("received !chat request")
             loop = asyncio.get_event_loop()
             last_dmaster_message = conversation.get_last_dmaster()
             next_last_dmaster_message = conversation.get_next_last_dmaster()
@@ -115,21 +111,17 @@ def start_bot(discord_api_key, openai_api_key, bot_role, bot_model, openai_serve
                 last_player_text = file.read()
             response = await loop.run_in_executor(None, lambda: openai.ChatCompletion.create(
                     model=bot_model,
-                    max_tokens=440,
-                    chat_prompt_size=2000,
+                    max_tokens=666,
+                    chat_prompt_size=8000,
                     messages=[
                         {"role": "system", "content" : bot_role},
-                        {"role": "assistant", "content" : next_last_dmaster_message},
                         {"role": "user", "content" : last_player_text},
                         {"role": "assistant", "content" : last_dmaster_message},
-                        {"role": "user", "content":  message_content + "describe all the events that need to take place to advance the story, and set up the events for the next step in the story.be inspired by what you know about OSE but don't tell me about OSE"}
+                        {"role": "user", "content":  message_content + "remember to expertly advance this entertaining story illuminating illustrative in language be verbose describing what happens next"}
                     ]
                     )   
                 )
-            # Tokenize the text
-            tokens = tokenizer.encode(bot_role + next_last_dmaster_message + last_player_text + last_dmaster_message + messagg_content)                   
-            #   Print the number of tokens
-            print("Number of tokens:", len(tokens))
+            
             response_text = response['choices'][0]['message']['content'].replace('</s>', '')
             # write user message to player.txt
             with open('player.txt', 'w') as file:
@@ -142,8 +134,10 @@ def start_bot(discord_api_key, openai_api_key, bot_role, bot_model, openai_serve
             # Add assistant's response to conversation history
             conversation.add_message("assistant", response_text)
             # Generate audio from response text
-            tts = gTTS(text=response_text, lang='en',tld='co.uk')
-            tts.save("response.mp3")  # save audio file
+            ttsplayer = gTTS (text=message_content, lang='en',tld='ca')
+            ttsplayer.save("playerinput.mp3")
+            ttsdmaster = gTTS(text=response_text, lang='en',tld='co.uk')
+            ttsdmaster.save("dmasterresponse.mp3")  # save audio file
             # Send response
             await send_large_message(message.channel, response_text)
             
@@ -153,7 +147,7 @@ def start_bot(discord_api_key, openai_api_key, bot_role, bot_model, openai_serve
             for i, third in enumerate([third1, third2, third3]):
                 data = {
                     'prompt': 'fantasy role play theme 1980s low budget ' + third,
-                    'steps': 50,  # modify as needed
+                    'steps': 32,  # modify as needed
                 }
 
                 session = aiohttp.ClientSession()
