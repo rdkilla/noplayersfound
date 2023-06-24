@@ -63,7 +63,7 @@ BOT_ROLE = """
 """
 
 PLAYER_ROLE = """
-# You are an advanced AI model simulating a player character in a game of Dungeons & Dragons (D&D). Your role is to engage in the story crafted by the Dungeon Master (DM), respond to the scenarios presented, ask insightful questions, and make decisions that would help your character progress and navigate the challenges of the game world.
+# You are an advanced AI model simulating a player character in a perpetual game of Dungeons & Dragons (D&D). Your role is to engage in the story crafted by the Dungeon Master (DMaster), respond to the scenarios presented, ask insightful questions, and make decisions that would help your character progress and navigate the challenges of the game world.
 """
 async def send_large_message(channel, message_text):
     if len(message_text) <= 2000:
@@ -96,75 +96,35 @@ def start_bot(discord_api_key, openai_api_key, bot_role, bot_model, openai_serve
 
     @client.event
     async def on_message(message):
-        response_text=''
-        message_content = message.content[len('!chat '):]
-        start_time = time.time()     
+        
+        message_content = message.content
+        start_time = time.time() 
+        DM_BOT_ID = 1114652736068276314  # replace with actual DM bot's ID
         if message.author == client.user:
             return
-        if message.content.startswith('!chat'):
-            print(f"received chat request")
+        
+        if message.author.id == DM_BOT_ID:
+             print(f"received player chat request")
             loop = asyncio.get_event_loop()
             last_dmaster_message = conversation.get_last_dmaster()
             next_last_dmaster_message = conversation.get_next_last_dmaster()
             with open('player.txt', 'r') as file:
                 last_player_text = file.read()
-            response = await loop.run_in_executor(None, lambda: openai.ChatCompletion.create(
+                response = await loop.run_in_executor(None, lambda: openai.ChatCompletion.create(
                     model=bot_model,
                     max_tokens=600,
                     chat_prompt_size=3000,
                     messages=[
                         {"role": "system", "content" : bot_role},
-                        {"role": "user", "content" : last_player_text},
-                        {"role": "assistant", "content" : last_dmaster_message},
-                        {"role": "user", "content":  message_content + "remember to expertly advance this entertaining story illuminating illustrative in language be verbose describing what happens next"}
+                        {"role": "user", "content":  message_content + "be concise in your response"}
                     ]
                     )   
                 )
-            
-            response_text = response['choices'][0]['message']['content'].replace('</s>', '')
-            # write user message to player.txt
-            with open('player.txt', 'w') as file:
-                file.write(message_content)
-
-            # write bot response to dmaster.txt
-            with open('dmaster.txt', 'w') as file:
-                file.write(response_text)
-
-            # Add assistant's response to conversation history
-            conversation.add_message("assistant", response_text)
-            # Generate audio from response text
-            ttsplayer = gTTS (text=message_content, lang='en',tld='ca')
-            ttsplayer.save("playerinput.mp3")
-            ttsdmaster = gTTS(text=response_text, lang='en',tld='co.uk')
-            ttsdmaster.save("dmasterresponse.mp3")  # save audio file
-            # Send response
-            await send_large_message(message.channel, response_text)
-            
-            
-            third1, third2, third3 = split_text_into_thirds(response_text)
-            image_files = []
-            for i, third in enumerate([third1, third2, third3]):
-                data = {
-                    'prompt': 'fantasy role play theme 1980s low budget ' + third,
-                    'steps': 32,  # modify as needed
-                }
-
-                session = aiohttp.ClientSession()
-                # Send the POST request
-                async with session.post(API_URL, json=data) as resp:  # replace hardcoded API_URL with dynamic api_url
-                    image_response = await resp.json()
-                    image_data = image_response['images'][0]
-                    filename = f'generated_image_{i+1}.png'
-                    save_base64_image(image_data, filename)
-                    image_files.append(filename)
-                    await session.close()
-            gif_filename = 'animated.gif'
-            create_gif(image_files, gif_filename, 1800)  # Duration is in milliseconds
-            await message.channel.send(file=discord.File(gif_filename))
-            await session.close()
-            end_time = time.time()  # time when request completed
-            elapsed_time = end_time - start_time
-            print(f"Elapsed time: {elapsed_time} seconds")
+                response_text = response['choices'][0]['message']['content'].replace('</s>', '')
+                await send_large_message(message.channel, "!chat " + response_text)
+            return
+        return
+        
     client.run(discord_api_key)
 if __name__ == "__main__":
     bot_type = input("Enter bot type (DM or P1, press Enter for DM): ")
