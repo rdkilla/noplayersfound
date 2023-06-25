@@ -30,6 +30,7 @@ class Conversation:
     def __init__(self, history_file):
         self.history_file = history_file
         self.load_history()
+        self.last_dmaster_message = None  # add this line
 
     def load_history(self):
         try:
@@ -96,27 +97,29 @@ def start_bot(discord_api_key, openai_api_key, bot_role, bot_model, openai_serve
 
     @client.event
     async def on_message(message):
-        
-        message_content = message.content
         start_time = time.time() 
         DM_BOT_ID = 1114652736068276314  # replace with actual DM bot's ID
 
-        # If the message is from the bot itself, ignore it and do nothing
         if message.author == client.user:
             return
-        
-        # Respond only if the message is from the DM bot and it's not an attachment
+                
+        # If the message is from the DM and does not have attachments, store it
         if message.author.id == DM_BOT_ID and not message.attachments:
+            conversation.last_dmaster_message = message.content  # store this message
+    
+        # If the message is from the DM and it has attachments, respond to the last stored message
+        elif message.author.id == DM_BOT_ID and message.attachments and conversation.last_dmaster_message is not None:
             print(f"received player chat request")
 
             loop = asyncio.get_event_loop()
-            last_dmaster_message = conversation.get_last_dmaster()
-            next_last_dmaster_message = conversation.get_next_last_dmaster()
+
+            # Use the last stored message
+            message_content = conversation.last_dmaster_message
+            conversation.last_dmaster_message = None  # clear the stored message
 
             with open('player.txt', 'r') as file:
                 last_player_text = file.read()
 
-                # Run the openai API call outside of the event handler to prevent triggering the event again
                 response = await loop.run_in_executor(None, lambda: openai.ChatCompletion.create(
                     model=bot_model,
                     max_tokens=600,
@@ -128,8 +131,6 @@ def start_bot(discord_api_key, openai_api_key, bot_role, bot_model, openai_serve
                     )   
                 )
                 response_text = response['choices'][0]['message']['content'].replace('</s>', '')
-
-                # We prevent calling the event again by sending the message after exiting the event
                 await send_large_message(message.channel, "!chat " + response_text)
      
         
