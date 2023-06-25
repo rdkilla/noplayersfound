@@ -100,16 +100,23 @@ def start_bot(discord_api_key, openai_api_key, bot_role, bot_model, openai_serve
         message_content = message.content
         start_time = time.time() 
         DM_BOT_ID = 1114652736068276314  # replace with actual DM bot's ID
+
+        # If the message is from the bot itself, ignore it and do nothing
         if message.author == client.user:
             return
         
+        # Respond only if the message is from the DM bot and it's not an attachment
         if message.author.id == DM_BOT_ID and not message.attachments:
             print(f"received player chat request")
+
             loop = asyncio.get_event_loop()
             last_dmaster_message = conversation.get_last_dmaster()
             next_last_dmaster_message = conversation.get_next_last_dmaster()
+
             with open('player.txt', 'r') as file:
                 last_player_text = file.read()
+
+                # Run the openai API call outside of the event handler to prevent triggering the event again
                 response = await loop.run_in_executor(None, lambda: openai.ChatCompletion.create(
                     model=bot_model,
                     max_tokens=600,
@@ -121,9 +128,10 @@ def start_bot(discord_api_key, openai_api_key, bot_role, bot_model, openai_serve
                     )   
                 )
                 response_text = response['choices'][0]['message']['content'].replace('</s>', '')
+
+                # We prevent calling the event again by sending the message after exiting the event
                 await send_large_message(message.channel, "!chat " + response_text)
-            return
-        return
+     
         
     client.run(discord_api_key)
 if __name__ == "__main__":

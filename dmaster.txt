@@ -1,15 +1,11 @@
-After the thrilling dance performance, you decide to approach the topic that has been on everyone's mind since the enigmatic stranger departed earlier. You turn to John Travolta and your other companions, voicing your intent to learn more about the mysterious figure and obtain directions to the Forgotten Crypt.
+You smile at Lirael, grateful for their offer to join your party. Excitement builds as you realize the potential of your newly-formed group. With Lirael's knowledge of the Forgotten Crypt and Thaddeus' combat prowess, you feel confident in your chances of success.
 
-John Travolta nods in agreement, his interest piqued as well. He calls over the innkeeper and asks if they have any knowledge of the individual who left earlier. The innkeeper, a portly half-orc with a bushy beard, scratches his head thoughtfully before responding.
+You announce to the rest of the Silver Stag Inn that your party is now ready to embark on the journey to the Forgotten Crypt. An atmosphere of anticipation fills the room as patrons watch your departure with curiosity and admiration.
 
-"Well, strangers come and go in these parts, but that fellow was peculiar," he says. "He seemed to be in quite a hurry, mumbling somethin' 'bout needin' to get to the Forgotten Crypt as fast as possible."
+As you gather your belongings and say your farewells, you ask Lirael more about their experience with the Forgotten Crypt. Their tales only serve to deepen the sense of mystery surrounding the ancient tomb.
 
-Your eyes widen at the mention of the crypt, knowing its significance in your quest. The innkeeper continues, "He said somethin' 'bout takin' a path through the Whispering Woods, then followin' the River Silentbrook until you reach a crumbled bridge. From there, it's a straight path to the Forgotten Crypt."
+A) Inquire about the specific challenges Lirael has encountered during their studies of the Forgotten Crypt,
+B) Request that Lirael provide guidance on how best to navigate the treacherous path to the crypt, or
+C) Suggest that your party take a moment to rest and plan before embarking on the journey to the Forgotten Crypt?
 
-With this valuable information, you consider your options:
-
-A) Thank the innkeeper and return to your table to discuss the next steps with your companions,
-B) Offer to buy a round of drinks for the innkeeper as a gesture of gratitude, or
-C) Decide to leave the tavern immediately and begin your journey to the Forgotten Crypt in the morning?
-
-Please enter the letter corresponding to your choice.
+Please enter the corresponding letter to select your action.
