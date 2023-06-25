@@ -7,11 +7,14 @@ import sys
 import aiohttp
 import asyncio
 import base64
+from aiohttp import ClientSession, ClientTimeout
 from io import BytesIO
 from PIL import Image
 from gtts import gTTS
 from discord import Intents, File
 from dotenv import load_dotenv
+
+timeout = ClientTimeout(total=800)  # total timeout of 60 seconds
 
 # Replace with your OBS WebSocket host, port, and password
 host = "localhost"
@@ -163,7 +166,7 @@ def start_bot(discord_api_key, openai_api_key, bot_role, bot_model, openai_serve
                     'steps': 32,  # modify as needed
                 }
 
-                session = aiohttp.ClientSession()
+                session = aiohttp.ClientSession(timeout=timeout)
                 # Send the POST request
                 async with session.post(API_URL, json=data) as resp:  # replace hardcoded API_URL with dynamic api_url
                     image_response = await resp.json()

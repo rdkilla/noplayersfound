@@ -126,7 +126,7 @@ def start_bot(discord_api_key, openai_api_key, bot_role, bot_model, openai_serve
                     chat_prompt_size=3000,
                     messages=[
                         {"role": "system", "content" : bot_role},
-                        {"role": "user", "content":  message_content + "be concise in your response"}
+                        {"role": "user", "content":  message_content + "be concise, but justify your response"}
                     ]
                     )   
                 )
