@@ -104,7 +104,7 @@ def start_bot(discord_api_key, openai_api_key, bot_role, bot_model, openai_serve
             return
         
         if message.author.id == DM_BOT_ID:
-             print(f"received player chat request")
+            print(f"received player chat request")
             loop = asyncio.get_event_loop()
             last_dmaster_message = conversation.get_last_dmaster()
             next_last_dmaster_message = conversation.get_next_last_dmaster()

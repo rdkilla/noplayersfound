@@ -51,19 +51,26 @@ class Conversation:
 
     def get_messages(self):
         return self.history[-2:]  # get the last 2 messages
+        
     def get_last_dmaster(self):
-        return self.history[-1:][0]['content']  # get last player message content
-    def get_next_last_dmaster(self):
-        return self.history[-2:][0]['content']  # get last player message content
-   
+        if len(self.history) >= 1:  # check if there's at least one entry in history
+            return self.history[-1]['content']  # get last dmaster message content
+        else:
+            return "i don't seem to recall"  # or some default value
+
+    # def get_next_last_dmaster(self):
+        # if len(self.history) >= 2:  # check if there's at least two entries in history
+            # return self.history[-2]['content']  # get second-to-last dmaster message content
+        # else:
+            # return None  # or some default value
 conversation = Conversation("history.json")
 
 BOT_ROLE = """
-# respond as an advanced AI playing the character of a dungeon master in a perpetual game of dungeons and dragons. describe events, people, places in great detail to create a vivid detailed world for the player to exist in. you give details descriptions of outcomes, movements, attacks, acts of god. You always try to end your response with a question about what the player wants to do next.
+respond ONLY as an advanced AI dungeon master in a perpetual game of dungeons and dragons. describe people, places in great detail to create a vivid world for the player to exist in. You describe events to advance and outcomes of player choices to advance the story.  You always try to end your response with a question about what the player wants to do next.
 """
 
 PLAYER_ROLE = """
-# You are an advanced AI model simulating a player character in a game of Dungeons & Dragons (D&D). Your role is to engage in the story crafted by the Dungeon Master (DM), respond to the scenarios presented, ask insightful questions, and make decisions that would help your character progress and navigate the challenges of the game world.
+You are an advanced AI model simulating a player character in a game of Dungeons & Dragons (D&D). Your role is to engage in the story crafted by the Dungeon Master (DM), respond to the scenarios presented, ask insightful questions, and make decisions that would help your character progress and navigate the challenges of the game world. This message is followed by the last player message, then the last message from you, then the most recent layer message. respond after you analyze the following data:
 """
 async def send_large_message(channel, message_text):
     if len(message_text) <= 2000:
@@ -98,29 +105,36 @@ def start_bot(discord_api_key, openai_api_key, bot_role, bot_model, openai_serve
     async def on_message(message):
         response_text=''
         message_content = message.content[len('!chat '):]
-        start_time = time.time()     
+        start_time = time.time() 
+    
         if message.author == client.user:
             return
         if message.content.startswith('!chat'):
             print(f"received chat request")
             loop = asyncio.get_event_loop()
             last_dmaster_message = conversation.get_last_dmaster()
-            next_last_dmaster_message = conversation.get_next_last_dmaster()
+            #next_last_dmaster_message = conversation.get_next_last_dmaster()
+            print("open player.txt")
             with open('player.txt', 'r') as file:
                 last_player_text = file.read()
+            print("player.txt open, initiate response")
+            print(last_player_text)
+            print(last_dmaster_message)
+            print(message_content)
             response = await loop.run_in_executor(None, lambda: openai.ChatCompletion.create(
-                    model=bot_model,
-                    max_tokens=600,
-                    chat_prompt_size=3000,
-                    messages=[
-                        {"role": "system", "content" : bot_role},
-                        {"role": "user", "content" : last_player_text},
-                        {"role": "assistant", "content" : last_dmaster_message},
-                        {"role": "user", "content":  message_content + "remember to expertly advance this entertaining story illuminating illustrative in language be verbose describing what happens next"}
-                    ]
-                    )   
+                model=bot_model,
+                max_tokens=660,
+                chat_prompt_size=6000,
+                messages=[
+                    {"role": "system", "content" : bot_role},
+                    {"role": "user", "content" : last_player_text},
+                    {"role": "assistant", "content" : last_dmaster_message},
+                    {"role": "user", "content":  message_content}
+                ]
                 )
-            
+            )                
+                
+            print("post chat create")
             response_text = response['choices'][0]['message']['content'].replace('</s>', '')
             # write user message to player.txt
             with open('player.txt', 'w') as file:
@@ -180,6 +194,6 @@ if __name__ == "__main__":
         API_URL = default_api_url 
 
     if bot_type == "P1":
-        start_bot(p1_discord_api_key, p1_openai_api_key, PLAYER_ROLE, "TheBloke_Wizard-Vicuna-13B-Uncensored-HF", openai_server, API_URL)
+        start_bot(p1_discord_api_key, p1_openai_api_key, PLAYER_ROLE, "TheBloke_vicuna-33B-preview-GPTQ", openai_server, API_URL)
     else:  # default to DM
-        start_bot(dm_discord_api_key, dm_openai_api_key, BOT_ROLE, "TheBloke_Wizard-Vicuna-13B-Uncensored-HF", openai_server, API_URL)
+        start_bot(dm_discord_api_key, dm_openai_api_key, BOT_ROLE, "TheBloke_vicuna-33B-preview-GPTQ", openai_server, API_URL)
