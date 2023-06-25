@@ -103,7 +103,7 @@ def start_bot(discord_api_key, openai_api_key, bot_role, bot_model, openai_serve
         if message.author == client.user:
             return
         
-        if message.author.id == DM_BOT_ID:
+        if message.author.id == DM_BOT_ID and not message.attachments:
             print(f"received player chat request")
             loop = asyncio.get_event_loop()
             last_dmaster_message = conversation.get_last_dmaster()
