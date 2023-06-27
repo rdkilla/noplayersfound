@@ -108,7 +108,7 @@ def start_bot(discord_api_key, openai_api_key, bot_role, bot_model, openai_serve
             conversation.last_dmaster_message = message.content  # store this message
     
         # If the message is from the DM and it has attachments, respond to the last stored message
-        elif message.author.id == DM_BOT_ID and message.attachments and conversation.last_dmaster_message is not None:
+        elif message.author.id == DM_BOT_ID and message.attachments:
             print(f"received player chat request")
 
             loop = asyncio.get_event_loop()
@@ -122,8 +122,8 @@ def start_bot(discord_api_key, openai_api_key, bot_role, bot_model, openai_serve
 
                 response = await loop.run_in_executor(None, lambda: openai.ChatCompletion.create(
                     model=bot_model,
-                    max_tokens=600,
-                    chat_prompt_size=3000,
+                    max_tokens=660,
+                    chat_prompt_size=6000,
                     messages=[
                         {"role": "system", "content" : bot_role},
                         {"role": "user", "content":  message_content + "be concise, but justify your response"}
