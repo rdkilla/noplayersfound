@@ -69,8 +69,14 @@ async def generate_image(txt2img_api_url, response_text):
         save_base64_image(image_data, filename)
     await session.close()
 
-async def run_batch():
-    process = await asyncio.create_subprocess_exec("facegen.bat", cwd=r"D:\ai\discordbot\noplayerfound")
+async def run_dmaster_facegen():
+    process = await asyncio.create_subprocess_exec("dmaster_facegen.bat", cwd=r"D:\ai\discordbot\noplayerfound")
+
+    # This line is non-blocking, allows other tasks to run while waiting
+    await process.communicate()
+
+async def run_player_facegen():
+    process = await asyncio.create_subprocess_exec("player_facegen.bat", cwd=r"D:\ai\discordbot\noplayerfound")
 
     # This line is non-blocking, allows other tasks to run while waiting
     await process.communicate()
@@ -166,6 +172,7 @@ def start_bot(discord_api_key, openai_api_key, bot_role, bot_model, openai_serve
             last_dmaster_message = conversation.get_last_dmaster()
             ttsplayer = gTTS (text=message_content, lang='en',tld='ca')
             ttsplayer.save("playerinput.mp3")
+            await run_player_facegen()
             #next_last_dmaster_message = conversation.get_next_last_dmaster()
             print("open player.txt")
             with open('player.txt', 'r') as file:
@@ -204,11 +211,10 @@ def start_bot(discord_api_key, openai_api_key, bot_role, bot_model, openai_serve
             # Send response
             await send_large_message(message.channel, response_text) 
             await generate_image(txt2img_api_url, response_text),
+            await run_dmaster_facegen()
             await message.channel.send(file=discord.File(gif_filename))
-            await run_batch()
             end_time = time.time()  # time when request completed
             elapsed_time = end_time - start_time
-            await message.channel.send(file=discord.File(gif_filename))
             print(f"Elapsed time: {elapsed_time} seconds")
     client.run(discord_api_key)
 if __name__ == "__main__":
