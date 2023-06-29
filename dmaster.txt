@@ -1,11 +1,1 @@
-You smile at Lirael, grateful for their offer to join your party. Excitement builds as you realize the potential of your newly-formed group. With Lirael's knowledge of the Forgotten Crypt and Thaddeus' combat prowess, you feel confident in your chances of success.
-
-You announce to the rest of the Silver Stag Inn that your party is now ready to embark on the journey to the Forgotten Crypt. An atmosphere of anticipation fills the room as patrons watch your departure with curiosity and admiration.
-
-As you gather your belongings and say your farewells, you ask Lirael more about their experience with the Forgotten Crypt. Their tales only serve to deepen the sense of mystery surrounding the ancient tomb.
-
-A) Inquire about the specific challenges Lirael has encountered during their studies of the Forgotten Crypt,
-B) Request that Lirael provide guidance on how best to navigate the treacherous path to the crypt, or
-C) Suggest that your party take a moment to rest and plan before embarking on the journey to the Forgotten Crypt?
-
-Please enter the corresponding letter to select your action.
+Excellent point! Environmental hazards can add a lot of depth and complexity to battles without necessarily increasing difficulty level. They encourage players to think outside the box and utilize different tactics than they may normally employ. Additionally, incorporating puzzle elements into the environment can provide a welcome break from constant fighting and allow players to flex their mental muscles alongside their physical ones.

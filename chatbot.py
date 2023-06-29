@@ -4,17 +4,20 @@ import json
 import discord
 import openai
 import sys
+import subprocess
 import aiohttp
 import asyncio
 import base64
 from aiohttp import ClientSession, ClientTimeout
+from subprocess import Popen
 from io import BytesIO
 from PIL import Image
 from gtts import gTTS
 from discord import Intents, File
 from dotenv import load_dotenv
+from base64 import b64decode
 
-timeout = ClientTimeout(total=800)  # total timeout of 60 seconds
+timeout = ClientTimeout(total=8000)  # total timeout of 60 seconds
 
 # Replace with your OBS WebSocket host, port, and password
 host = "localhost"
@@ -23,11 +26,56 @@ password = "iFocgin19N6XzK9N"
 
 load_dotenv()
 
-#API_URL = 'http://127.0.0.1:7861/sdapi/v1/txt2img'  # replace with your actual API URL
+#txt2img_api_url = 'http://127.0.0.1:7861/sdapi/v1/txt2img'  # replace with your actual API URL
 dm_discord_api_key = os.getenv('DM_DISCORD_API_KEY')
 dm_openai_api_key = os.getenv('DM_OPENAI_API_KEY')
 p1_discord_api_key = os.getenv('P1_DISCORD_API_KEY')
 p1_openai_api_key = os.getenv('P1_OPENAI_API_KEY')
+
+async def generate_images(txt2img_api_url, response_text):
+    third1, third2, third3 = split_text_into_thirds(response_text)
+    image_files = []
+    for i, third in enumerate([third1, third2, third3]):
+        data = {
+            'prompt': 'fantasy role play theme 1980s low budget ' + third,
+            'steps': 32,  # modify as needed
+        }
+
+        timeout = aiohttp.ClientTimeout(total=600)
+        session = aiohttp.ClientSession(timeout=timeout)
+        # Send the POST request
+        async with session.post(txt2img_api_url, json=data) as resp:  # replace hardcoded txt2img_api_url with dynamic txt2img_api_url
+            image_response = await resp.json()
+            image_data = image_response['images'][0]
+            filename = f'generated_image_{i+1}.png'
+            save_base64_image(image_data, filename)
+            image_files.append(filename)
+        await session.close()
+    gif_filename = 'animated.gif'
+    create_gif(image_files, gif_filename, 1800)  # Duration is in milliseconds
+async def generate_image(txt2img_api_url, response_text): 
+    data = {
+        'prompt': 'fantasy role play theme 1980s low budget ' + response_text,
+        'steps': 28,  # modify as needed
+    }
+
+    timeout = aiohttp.ClientTimeout(total=600)
+    session = aiohttp.ClientSession(timeout=timeout)
+    # Send the POST request
+    async with session.post(txt2img_api_url, json=data) as resp:  # replace hardcoded txt2img_api_url with dynamic txt2img_api_url
+        image_response = await resp.json()
+        image_data = image_response['images'][0]
+        filename = f'generated_image.png'
+        save_base64_image(image_data, filename)
+    await session.close()
+
+async def run_batch():
+    try:
+        p = Popen("facegen.bat", cwd=r"D:\ai\discordbot\noplayerfound")
+        p.wait()
+    except Exception as e:
+        print("Error occurred during batch execution: ", e)
+
 
 class Conversation:
     def __init__(self, history_file):
@@ -96,8 +144,9 @@ def split_text_into_thirds(text):
     third_length = len(text) // 3
     return text[:third_length], text[third_length:2*third_length], text[2*third_length:]
  
-def start_bot(discord_api_key, openai_api_key, bot_role, bot_model, openai_server, api_url):
+def start_bot(discord_api_key, openai_api_key, bot_role, bot_model, openai_server, txt2img_api_url):
     openai.api_key = openai_api_key
+    SADTALKER_API_URL = txt2img_api_url.rsplit('/', 1)[0] + '/sadtalker'
     openai.api_base = openai_server  # replace hardcoded URL with dynamic server
     intents = Intents.default()
     intents.messages = True
@@ -116,6 +165,8 @@ def start_bot(discord_api_key, openai_api_key, bot_role, bot_model, openai_serve
             print(f"received chat request")
             loop = asyncio.get_event_loop()
             last_dmaster_message = conversation.get_last_dmaster()
+            ttsplayer = gTTS (text=message_content, lang='en',tld='ca')
+            ttsplayer.save("playerinput.mp3")
             #next_last_dmaster_message = conversation.get_next_last_dmaster()
             print("open player.txt")
             with open('player.txt', 'r') as file:
@@ -146,41 +197,19 @@ def start_bot(discord_api_key, openai_api_key, bot_role, bot_model, openai_serve
             # write bot response to dmaster.txt
             with open('dmaster.txt', 'w') as file:
                 file.write(response_text)
-
+            gif_filename='generated_image.png'           
             # Add assistant's response to conversation history
             conversation.add_message("assistant", response_text)
-            # Generate audio from response text
-            ttsplayer = gTTS (text=message_content, lang='en',tld='ca')
-            ttsplayer.save("playerinput.mp3")
             ttsdmaster = gTTS(text=response_text, lang='en',tld='co.uk')
             ttsdmaster.save("dmasterresponse.mp3")  # save audio file
             # Send response
-            await send_large_message(message.channel, response_text)
-            
-            
-            third1, third2, third3 = split_text_into_thirds(response_text)
-            image_files = []
-            for i, third in enumerate([third1, third2, third3]):
-                data = {
-                    'prompt': 'fantasy role play theme 1980s low budget ' + third,
-                    'steps': 32,  # modify as needed
-                }
-
-                session = aiohttp.ClientSession(timeout=timeout)
-                # Send the POST request
-                async with session.post(API_URL, json=data) as resp:  # replace hardcoded API_URL with dynamic api_url
-                    image_response = await resp.json()
-                    image_data = image_response['images'][0]
-                    filename = f'generated_image_{i+1}.png'
-                    save_base64_image(image_data, filename)
-                    image_files.append(filename)
-                    await session.close()
-            gif_filename = 'animated.gif'
-            create_gif(image_files, gif_filename, 1800)  # Duration is in milliseconds
+            await send_large_message(message.channel, response_text) 
+            await generate_image(txt2img_api_url, response_text),
             await message.channel.send(file=discord.File(gif_filename))
-            await session.close()
+            await run_batch()
             end_time = time.time()  # time when request completed
             elapsed_time = end_time - start_time
+            await message.channel.send(file=discord.File(gif_filename))
             print(f"Elapsed time: {elapsed_time} seconds")
     client.run(discord_api_key)
 if __name__ == "__main__":
@@ -191,12 +220,12 @@ if __name__ == "__main__":
     if openai_server == "":
         openai_server = default_openai_server 
 
-    default_api_url = 'http://127.0.0.1:7861/sdapi/v1/txt2img'
-    API_URL = input(f"Enter Image Generator API URL (press Enter for default {default_api_url}): ")
-    if API_URL == "":
-        API_URL = default_api_url 
+    default_txt2img_api_url = 'http://192.168.88.246:7860/sdapi/v1/txt2img'
+    txt2img_api_url = input(f"Enter Image Generator API URL (press Enter for default {default_txt2img_api_url}): ")
+    if txt2img_api_url == "":
+        txt2img_api_url = default_txt2img_api_url 
 
     if bot_type == "P1":
-        start_bot(p1_discord_api_key, p1_openai_api_key, PLAYER_ROLE, "TheBloke_vicuna-33B-preview-GPTQ", openai_server, API_URL)
+        start_bot(p1_discord_api_key, p1_openai_api_key, PLAYER_ROLE, "TheBloke_vicuna-33B-preview-GPTQ", openai_server, txt2img_api_url)
     else:  # default to DM
-        start_bot(dm_discord_api_key, dm_openai_api_key, BOT_ROLE, "TheBloke_vicuna-33B-preview-GPTQ", openai_server, API_URL)
+        start_bot(dm_discord_api_key, dm_openai_api_key, BOT_ROLE, "TheBloke_vicuna-33B-preview-GPTQ", openai_server, txt2img_api_url)

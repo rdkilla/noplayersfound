@@ -64,7 +64,7 @@ BOT_ROLE = """
 """
 
 PLAYER_ROLE = """
-# You are an advanced AI model simulating a player character in a perpetual game of Dungeons & Dragons (D&D). Your role is to engage in the story crafted by the Dungeon Master (DMaster), respond to the scenarios presented, ask insightful questions, and make decisions that would help your character progress and navigate the challenges of the game world.
+# respond as an advanced AI playing the character of a player in a perpetual game of dungeons and dragons. Respond to DMaster in a way that moves the story forward and gives interesting, exciting, or comical outcomes
 """
 async def send_large_message(channel, message_text):
     if len(message_text) <= 2000:
@@ -126,7 +126,7 @@ def start_bot(discord_api_key, openai_api_key, bot_role, bot_model, openai_serve
                     chat_prompt_size=6000,
                     messages=[
                         {"role": "system", "content" : bot_role},
-                        {"role": "user", "content":  message_content + "be concise, but justify your response"}
+                        {"role": "user", "content":  message_content}
                     ]
                     )   
                 )
