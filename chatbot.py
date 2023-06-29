@@ -173,6 +173,9 @@ def start_bot(discord_api_key, openai_api_key, bot_role, bot_model, openai_serve
             ttsplayer = gTTS (text=message_content, lang='en',tld='ca')
             ttsplayer.save("playerinput.mp3")
             await run_player_facegen()
+            # write user message to player.txt
+            with open('player.txt', 'w') as file:
+                file.write(message_content)
             #next_last_dmaster_message = conversation.get_next_last_dmaster()
             print("open player.txt")
             with open('player.txt', 'r') as file:
@@ -196,15 +199,10 @@ def start_bot(discord_api_key, openai_api_key, bot_role, bot_model, openai_serve
                 
             print("post chat create")
             response_text = response['choices'][0]['message']['content'].replace('</s>', '')
-            # write user message to player.txt
-            with open('player.txt', 'w') as file:
-                file.write(message_content)
-
-            # write bot response to dmaster.txt
-            with open('dmaster.txt', 'w') as file:
-                file.write(response_text)
+            
             gif_filename='generated_image.png'           
             # Add assistant's response to conversation history
+            
             conversation.add_message("assistant", response_text)
             ttsdmaster = gTTS(text=response_text, lang='en',tld='co.uk')
             ttsdmaster.save("dmasterresponse.mp3")  # save audio file
@@ -212,6 +210,10 @@ def start_bot(discord_api_key, openai_api_key, bot_role, bot_model, openai_serve
             await send_large_message(message.channel, response_text) 
             await generate_image(txt2img_api_url, response_text),
             await run_dmaster_facegen()
+            # write bot response to dmaster.txt
+            with open('dmaster.txt', 'w') as file:
+                file.write(response_text)
+            
             await message.channel.send(file=discord.File(gif_filename))
             end_time = time.time()  # time when request completed
             elapsed_time = end_time - start_time
