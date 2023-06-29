@@ -70,11 +70,10 @@ async def generate_image(txt2img_api_url, response_text):
     await session.close()
 
 async def run_batch():
-    try:
-        p = Popen("facegen.bat", cwd=r"D:\ai\discordbot\noplayerfound")
-        p.wait()
-    except Exception as e:
-        print("Error occurred during batch execution: ", e)
+    process = await asyncio.create_subprocess_exec("facegen.bat", cwd=r"D:\ai\discordbot\noplayerfound")
+
+    # This line is non-blocking, allows other tasks to run while waiting
+    await process.communicate()
 
 
 class Conversation:
