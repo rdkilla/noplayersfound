@@ -56,7 +56,9 @@ async def generate_images(txt2img_api_url, response_text):
 async def generate_image(txt2img_api_url, response_text): 
     data = {
         'prompt': 'fantasy role play theme 1980s low budget ' + response_text,
-        'steps': 28,  # modify as needed
+        'steps': 60,  # modify as needed
+        'width': 768,
+        'height': 768,
     }
 
     timeout = aiohttp.ClientTimeout(total=600)
@@ -202,22 +204,31 @@ def start_bot(discord_api_key, openai_api_key, bot_role, bot_model, openai_serve
             
             gif_filename='generated_image.png'           
             # Add assistant's response to conversation history
-            
             conversation.add_message("assistant", response_text)
+            
             ttsdmaster = gTTS(text=response_text, lang='en',tld='co.uk')
             ttsdmaster.save("dmasterresponse.mp3")  # save audio file
+            
             # Send response
             await send_large_message(message.channel, response_text) 
-            await generate_image(txt2img_api_url, response_text),
-            await run_dmaster_facegen()
+            
+            #generate face animatino and api call for image generation in parallel?
+            await asyncio.gather(
+                generate_image(txt2img_api_url, response_text),
+                run_dmaster_facegen()
+            )
+
+            
             # write bot response to dmaster.txt
             with open('dmaster.txt', 'w') as file:
                 file.write(response_text)
-            
+                
+            print("sending picture")
             await message.channel.send(file=discord.File(gif_filename))
             end_time = time.time()  # time when request completed
             elapsed_time = end_time - start_time
             print(f"Elapsed time: {elapsed_time} seconds")
+            
     client.run(discord_api_key)
 if __name__ == "__main__":
     bot_type = input("Enter bot type (DM or P1, press Enter for DM): ")
