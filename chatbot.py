@@ -31,7 +31,20 @@ dm_discord_api_key = os.getenv('DM_DISCORD_API_KEY')
 dm_openai_api_key = os.getenv('DM_OPENAI_API_KEY')
 p1_discord_api_key = os.getenv('P1_DISCORD_API_KEY')
 p1_openai_api_key = os.getenv('P1_OPENAI_API_KEY')
+summarizer_openai_api_key = os.getenv('SUMMARIZER_OPENAI_API_KEY')
 
+
+def save_defaults(data):
+    with open("defaults.json", "w") as file:
+        json.dump(data, file)
+
+def load_defaults():
+    try:
+        with open("defaults.json", "r") as file:
+            return json.load(file)
+    except FileNotFoundError:
+        return None
+        
 async def generate_images(txt2img_api_url, response_text):
     third1, third2, third3 = split_text_into_thirds(response_text)
     image_files = []
@@ -153,7 +166,7 @@ def split_text_into_thirds(text):
  
 def start_bot(discord_api_key, openai_api_key, bot_role, bot_model, openai_server, txt2img_api_url):
     openai.api_key = openai_api_key
-    SADTALKER_API_URL = txt2img_api_url.rsplit('/', 1)[0] + '/sadtalker'
+    #SADTALKER_API_URL = txt2img_api_url.rsplit('/', 1)[0] + '/sadtalker'
     openai.api_base = openai_server  # replace hardcoded URL with dynamic server
     intents = Intents.default()
     intents.messages = True
@@ -231,19 +244,27 @@ def start_bot(discord_api_key, openai_api_key, bot_role, bot_model, openai_serve
             
     client.run(discord_api_key)
 if __name__ == "__main__":
-    bot_type = input("Enter bot type (DM or P1, press Enter for DM): ")
-    
-    default_openai_server = 'http://127.0.0.1:5001/v1'
-    openai_server = input(f"Enter OpenAI server (press Enter for default {default_openai_server}): ")
-    if openai_server == "":
-        openai_server = default_openai_server 
+    defaults = load_defaults()
 
-    default_txt2img_api_url = 'http://192.168.88.246:7860/sdapi/v1/txt2img'
-    txt2img_api_url = input(f"Enter Image Generator API URL (press Enter for default {default_txt2img_api_url}): ")
-    if txt2img_api_url == "":
-        txt2img_api_url = default_txt2img_api_url 
+    if defaults is None:
+        bot_type = input("Enter bot type (DM or P1, press Enter for DM): ")
+        openai_server = input("Enter OpenAI server (press Enter for http://127.0.0.1:5001/v1): ")
+        API_URL = input("Enter Image Generator API URL (press Enter for http://127.0.0.1:7861/sdapi/v1/txt2img): ")
+    else:
+        bot_type = input(f"Enter bot type (DM or P1, press Enter for {defaults['bot_type']}): ")
+        openai_server = input(f"Enter OpenAI server (press Enter for {defaults['openai_server']}): ")
+        API_URL = input(f"Enter Image Generator API URL (press Enter for {defaults['API_URL']}): ")
+
+    if bot_type == "":
+        bot_type = defaults['bot_type'] if defaults else "DM"
+    if openai_server == "":
+        openai_server = defaults['openai_server'] if defaults else "http://127.0.0.1:5001/v1"
+    if API_URL == "":
+        API_URL = defaults['API_URL'] if defaults else "http://127.0.0.1:7861/sdapi/v1/txt2img"
+
+    save_defaults({"bot_type": bot_type, "openai_server": openai_server, "API_URL": API_URL})
 
     if bot_type == "P1":
-        start_bot(p1_discord_api_key, p1_openai_api_key, PLAYER_ROLE, "TheBloke_vicuna-33B-preview-GPTQ", openai_server, txt2img_api_url)
+        start_bot(p1_discord_api_key, p1_openai_api_key, PLAYER_ROLE, "TheBloke_Wizard-Vicuna-13B-Uncensored-HF", openai_server, API_URL)
     else:  # default to DM
-        start_bot(dm_discord_api_key, dm_openai_api_key, BOT_ROLE, "TheBloke_vicuna-33B-preview-GPTQ", openai_server, txt2img_api_url)
+        start_bot(dm_discord_api_key, dm_openai_api_key, BOT_ROLE, "TheBloke_Wizard-Vicuna-13B-Uncensored-HF", openai_server, API_URL)
