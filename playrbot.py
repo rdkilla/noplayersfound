@@ -133,8 +133,8 @@ def start_bot(discord_api_key, openai_api_key, bot_role, bot_model, openai_serve
 
                 response = await loop.run_in_executor(None, lambda: openai.ChatCompletion.create(
                     model=bot_model,
-                    max_tokens=660,
-                    chat_prompt_size=6000,
+                    max_tokens=240,
+                    chat_prompt_size=1000,
                     messages=[
                         {"role": "system", "content" : bot_role},
                         {"role": "user", "content":  message_content}
