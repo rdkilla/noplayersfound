@@ -116,7 +116,7 @@ class Conversation:
 
     def add_message(self, role, content):
         self.history.append({"role": role, "content": content})
-        if len(self.history) > 50:  # if more than 50 messages, remove the oldest one
+        if len(self.history) > 100:  # if more than 50 messages, remove the oldest one
             del self.history[0]
         self.save_history()  # save after every addition
 
@@ -196,19 +196,39 @@ def start_bot(discord_api_key, openai_api_key, bot_role, bot_model, openai_serve
             with open('player.txt', 'r') as file:
                 last_player_text = file.read()
             print("player.txt open, initiate response")
+            # Load the list of past messages from your JSON file
+            with open("history.json", "r") as file:
+                past_messages = json.load(file)
+            
+            #past_messages.reverse()  # Reverse the list so the most recent messages are first
+            #    Prepare the list of messages for the Chat API
+            messages = [{"role": "system", "content" : bot_role}]
             print(last_player_text)
+            total_tokens = len(last_player_text.split())
             print(last_dmaster_message)
+            print(total_tokens)
+            total_tokens += len(last_dmaster_message.split())
             print(message_content)
+            print(total_tokens)
+            total_tokens += len(message_content.split())
+            print(total_tokens)
+            for msg in past_messages:
+                msg_tokens = len(msg['content'].split())
+                # Check if adding this message would exceed the token limit
+                if total_tokens + msg_tokens > 1000:
+                    break  # If it would, stop adding messages
+                # Otherwise, add the message to the list
+                messages.append(msg)
+                total_tokens += msg_tokens
+                print(total_tokens)
+            messages.append({"role": "system", "content" : bot_role})
+            messages.append({"role": "user", "content":  message_content})
+            print("adding complete")
             response = await loop.run_in_executor(None, lambda: openai.ChatCompletion.create(
                 model=bot_model,
-                max_tokens=660,
-                chat_prompt_size=6000,
-                messages=[
-                    {"role": "system", "content" : bot_role},
-                    {"role": "user", "content" : last_player_text},
-                    {"role": "assistant", "content" : last_dmaster_message},
-                    {"role": "user", "content":  message_content}
-                ]
+                max_tokens=546,
+                chat_prompt_size=550,
+                messages=messages
                 )
             )                
                 
