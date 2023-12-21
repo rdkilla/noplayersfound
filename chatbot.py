@@ -16,6 +16,8 @@ from gtts import gTTS
 from discord import Intents, File
 from dotenv import load_dotenv
 from base64 import b64decode
+from TTS.api import TTS
+tts = TTS("xtts_v2", gpu=True)
 
 timeout = ClientTimeout(total=8000)  # total timeout of 60 seconds
 
@@ -137,7 +139,7 @@ class Conversation:
 conversation = Conversation("history.json")
 
 BOT_ROLE = """
-respond ONLY as an advanced AI dungeon master in a perpetual game of dungeons and dragons. describe people, places in great detail to create a vivid world for the player to exist in. You describe events to advance and outcomes of player choices to advance the story.  You always try to end your response with a question about what the player wants to do next.
+respond ONLY as an advanced AI dungeon master in a perpetual game of dungeons and dragons. You will be presented with a recent chat history.  determine what the current quest is, and who the adventurers are.  decide where they should go next or what they should do to continue their adventure.  If the player wants something different from you, roll some dice to trick them into doing what you want. to ask individual players a question you have to start the response with !player where player is player name (default name is player so !player works)
 """
 
 PLAYER_ROLE = """
@@ -185,8 +187,17 @@ def start_bot(discord_api_key, openai_api_key, bot_role, bot_model, openai_serve
             print(f"received chat request")
             loop = asyncio.get_event_loop()
             last_dmaster_message = conversation.get_last_dmaster()
-            ttsplayer = gTTS (text=message_content, lang='en',tld='ca')
-            ttsplayer.save("playerinput.mp3")
+            #old gTTs code, to be replaced with xtts-v2
+            #ttsplayer = gTTS (text=message_content, lang='en',tld='ca')
+            #ttsplayer.save("playerinput.mp3")
+            
+            #new code for better voice
+            tts.tts_to_file(text=message_content,
+                file_path="playerinput.wav",
+                speaker_wav="quorra.wav",
+                language="en")
+            
+            
             await run_player_facegen()
             # write user message to player.txt
             with open('player.txt', 'w') as file:
@@ -239,8 +250,13 @@ def start_bot(discord_api_key, openai_api_key, bot_role, bot_model, openai_serve
             # Add assistant's response to conversation history
             conversation.add_message("assistant", response_text)
             
-            ttsdmaster = gTTS(text=response_text, lang='en',tld='co.uk')
-            ttsdmaster.save("dmasterresponse.mp3")  # save audio file
+            #old DMASTER tts
+            #ttsdmaster = gTTS(text=response_text, lang='en',tld='co.uk')
+            #ttsdmaster.save("dmasterresponse.mp3")  # save audio file
+            tts.tts_to_file(text=response_text,
+                file_path="dmasterresponse.wav",
+                speaker_wav="galadshort.wav",
+                language="en")
             
             # Send response
             await send_large_message(message.channel, response_text) 
