@@ -57,7 +57,7 @@ class Conversation:
 
     def add_message(self, role, content):
         self.history.append({"role": role, "content": content})
-        if len(self.history) > 50:  # if more than 50 messages, remove the oldest one
+        if len(self.history) > 200:  # if more than 50 messages, remove the oldest one
             del self.history[0]
         self.save_history()  # save after every addition
 
@@ -133,8 +133,8 @@ def start_bot(discord_api_key, openai_api_key, bot_role, bot_model, openai_serve
 
                 response = await loop.run_in_executor(None, lambda: openai.ChatCompletion.create(
                     model=bot_model,
-                    max_tokens=240,
-                    chat_prompt_size=1000,
+                    max_tokens=600,
+                    chat_prompt_size=2000,
                     messages=[
                         {"role": "system", "content" : bot_role},
                         {"role": "user", "content":  message_content}

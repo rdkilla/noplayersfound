@@ -1,6 +1,7 @@
 import os
 import time
 import json
+import csv
 import discord
 import openai
 import sys
@@ -190,7 +191,7 @@ def start_bot(discord_api_key, openai_api_key, bot_role, bot_model, openai_serve
             #old gTTs code, to be replaced with xtts-v2
             #ttsplayer = gTTS (text=message_content, lang='en',tld='ca')
             #ttsplayer.save("playerinput.mp3")
-            
+            generate_image(txt2img_api_url, message_content)
             #new code for better voice
             tts.tts_to_file(text=message_content,
                 file_path="playerinput.wav",
@@ -277,6 +278,9 @@ def start_bot(discord_api_key, openai_api_key, bot_role, bot_model, openai_serve
             end_time = time.time()  # time when request completed
             elapsed_time = end_time - start_time
             print(f"Elapsed time: {elapsed_time} seconds")
+            with open('log.csv', 'a', newline='') as file:  # 'a' mode appends to the file
+                writer = csv.writer(file)
+                writer.writerow([end_time, elapsed_time])
             
     client.run(discord_api_key)
 if __name__ == "__main__":
