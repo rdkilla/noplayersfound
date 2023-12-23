@@ -192,7 +192,7 @@ def start_bot(discord_api_key, openai_api_key, bot_role, bot_model, openai_serve
             #ttsplayer = gTTS (text=message_content, lang='en',tld='ca')
             #ttsplayer.save("playerinput.mp3")
             generate_image(txt2img_api_url, message_content)
-            #new code for better voice
+            #new code for better voice - might need to run async with something else
             tts.tts_to_file(text=message_content,
                 file_path="playerinput.wav",
                 speaker_wav="quorra.wav",
@@ -233,7 +233,8 @@ def start_bot(discord_api_key, openai_api_key, bot_role, bot_model, openai_serve
                 messages.append(msg)
                 total_tokens += msg_tokens
                 print(total_tokens)
-            messages.append({"role": "system", "content" : bot_role})
+            # i think it was adding bot role twice
+            # messages.append({"role": "system", "content" : bot_role})
             messages.append({"role": "user", "content":  message_content})
             print("adding complete")
             response = await loop.run_in_executor(None, lambda: openai.ChatCompletion.create(
