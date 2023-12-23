@@ -245,6 +245,8 @@ def start_bot(discord_api_key, openai_api_key, bot_role, bot_model, openai_serve
             )                
                 
             print("post chat create")
+            postchat_time1 = time.time()
+            postchat_time = postchat_time1 - start_time
             response_text = response['choices'][0]['message']['content'].replace('</s>', '')
             
             gif_filename='generated_image.png'           
@@ -280,7 +282,7 @@ def start_bot(discord_api_key, openai_api_key, bot_role, bot_model, openai_serve
             print(f"Elapsed time: {elapsed_time} seconds")
             with open('log.csv', 'a', newline='') as file:  # 'a' mode appends to the file
                 writer = csv.writer(file)
-                writer.writerow([end_time, elapsed_time])
+                writer.writerow([ end_time, postchat_time, elapsed_time])
             
     client.run(discord_api_key)
 if __name__ == "__main__":

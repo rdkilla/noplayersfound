@@ -57,7 +57,7 @@ class Conversation:
 
     def add_message(self, role, content):
         self.history.append({"role": role, "content": content})
-        if len(self.history) > 200:  # if more than 50 messages, remove the oldest one
+        if len(self.history) > 50:  # if more than 50 messages, remove the oldest one
             del self.history[0]
         self.save_history()  # save after every addition
 
