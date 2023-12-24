@@ -182,15 +182,21 @@ def start_bot(discord_api_key, openai_api_key, bot_role, bot_model, openai_serve
             #old gTTs code, to be replaced with xtts-v2
             #ttsplayer = gTTS (text=message_content, lang='en',tld='ca')
             #ttsplayer.save("playerinput.mp3")
-            generate_image(txt2img_api_url, message_content)
+            #generate_image(txt2img_api_url, message_content)
             #new code for better voice - might need to run async with something else
             tts.tts_to_file(text=message_content,
                 file_path="playerinput.wav",
                 speaker_wav="quorra.wav",
                 language="en")
-            
+            #generate some logging data for tts creation time
+            player_voice_time1 = time.time()
+            player_voice_time = player_voice_time1 - start_time
             
             await run_player_facegen()
+            #generate logging data for player facegen
+            player_facegen_time1 = time.time()
+            player_facegen_time = player_facegen_time1 - start_time
+            
             # write user message to player.txt
             with open('player.txt', 'w') as file:
                 file.write(message_content)
@@ -273,15 +279,15 @@ def start_bot(discord_api_key, openai_api_key, bot_role, bot_model, openai_serve
             print(f"Elapsed time: {elapsed_time} seconds")
             
             # Specify the header names
-            headers = ['End Time', 'Post-Chat Time', 'Elapsed Time']
+            headers = ['End Time', 'PlayerVoiceTime', 'PlayerFacegen', 'Post-Chat Time', 'unaccounted','Elapsed Time']
             #Check if the file already exists and has content
             file_exists = os.path.isfile(file_path) and os.path.getsize(file_path) > 0 
-            
+            unaccounted_time = elapsed time - (player_voice_time + player_facegen_time + postchat_time)
             with open('log.csv', 'a', newline='') as file:  # 'a' mode appends to the file
                 writer = csv.writer(file)
                 if not file_exists:
                     writer.writerow(headers)
-                writer.writerow([ end_time, postchat_time, elapsed_time])
+                writer.writerow([ end_time, player_voice_time, player_facegen_time, postchat_time, unaccounted_time, elapsed_time])
             
     client.run(discord_api_key)
 if __name__ == "__main__":
