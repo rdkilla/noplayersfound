@@ -18,14 +18,10 @@ from discord import Intents, File
 from dotenv import load_dotenv
 from base64 import b64decode
 from TTS.api import TTS
+
 tts = TTS("xtts_v2", gpu=True)
 
 timeout = ClientTimeout(total=8000)  # total timeout of 60 seconds
-
-# Replace with your OBS WebSocket host, port, and password
-host = "localhost"
-port = 4455
-password = "iFocgin19N6XzK9N"
 
 load_dotenv()
 
@@ -35,7 +31,6 @@ dm_openai_api_key = os.getenv('DM_OPENAI_API_KEY')
 p1_discord_api_key = os.getenv('P1_DISCORD_API_KEY')
 p1_openai_api_key = os.getenv('P1_OPENAI_API_KEY')
 summarizer_openai_api_key = os.getenv('SUMMARIZER_OPENAI_API_KEY')
-
 
 def save_defaults(data):
     with open("defaults.json", "w") as file:
@@ -69,6 +64,7 @@ async def generate_images(txt2img_api_url, response_text):
         await session.close()
     gif_filename = 'animated.gif'
     create_gif(image_files, gif_filename, 1800)  # Duration is in milliseconds
+    
 async def generate_image(txt2img_api_url, response_text): 
     data = {
         'prompt': 'fantasy role play theme 1980s low budget ' + response_text,
@@ -98,7 +94,6 @@ async def run_player_facegen():
 
     # This line is non-blocking, allows other tasks to run while waiting
     await process.communicate()
-
 
 class Conversation:
     def __init__(self, history_file):
@@ -132,11 +127,7 @@ class Conversation:
         else:
             return "i don't seem to recall"  # or some default value
 
-    # def get_next_last_dmaster(self):
-        # if len(self.history) >= 2:  # check if there's at least two entries in history
-            # return self.history[-2]['content']  # get second-to-last dmaster message content
-        # else:
-            # return None  # or some default value
+
 conversation = Conversation("history.json")
 
 BOT_ROLE = """
@@ -271,7 +262,6 @@ def start_bot(discord_api_key, openai_api_key, bot_role, bot_model, openai_serve
                 run_dmaster_facegen()
             )
 
-            
             # write bot response to dmaster.txt
             with open('dmaster.txt', 'w') as file:
                 file.write(response_text)
@@ -281,8 +271,16 @@ def start_bot(discord_api_key, openai_api_key, bot_role, bot_model, openai_serve
             end_time = time.time()  # time when request completed
             elapsed_time = end_time - start_time
             print(f"Elapsed time: {elapsed_time} seconds")
+            
+            # Specify the header names
+            headers = ['End Time', 'Post-Chat Time', 'Elapsed Time']
+            #Check if the file already exists and has content
+            file_exists = os.path.isfile(file_path) and os.path.getsize(file_path) > 0 
+            
             with open('log.csv', 'a', newline='') as file:  # 'a' mode appends to the file
                 writer = csv.writer(file)
+                if not file_exists:
+                    writer.writerow(headers)
                 writer.writerow([ end_time, postchat_time, elapsed_time])
             
     client.run(discord_api_key)
