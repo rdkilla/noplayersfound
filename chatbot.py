@@ -69,8 +69,8 @@ async def generate_image(txt2img_api_url, response_text):
     data = {
         'prompt': 'fantasy role play theme 1980s low budget ' + response_text,
         'steps': 60,  # modify as needed
-        'width': 768,
-        'height': 768,
+        'width': 640,
+        'height': 480,
     }
 
     timeout = aiohttp.ClientTimeout(total=600)
@@ -157,7 +157,48 @@ def save_base64_image(image_data, filename):
 def split_text_into_thirds(text):
     third_length = len(text) // 3
     return text[:third_length], text[third_length:2*third_length], text[2*third_length:]
- 
+
+async def generate_chat_response(bot_model, bot_role, player_file_path, history_file_path, message_content, loop):
+    print("Opening player.txt")
+    with open(player_file_path, 'r') as file:
+        last_player_text = file.read()
+    print("player.txt open, initiating response")
+    
+    # Load the list of past messages from your JSON file
+    with open(history_file_path, "r") as file:
+        past_messages = json.load(file)
+
+    # Prepare the list of messages for the Chat API
+    messages = [{"role": "system", "content": bot_role}]
+
+    # Calculate the total number of tokens
+    total_tokens = len(last_player_text.split()) + len(message_content.split())
+
+    # Add messages from the past messages to the current list
+    for msg in past_messages:
+        msg_tokens = len(msg['content'].split())
+        if total_tokens + msg_tokens > 2048:
+            break
+        messages.append(msg)
+        total_tokens += msg_tokens
+
+    # Add the current user message
+    messages.append({"role": "user", "content": message_content})
+
+    # Generate the response using OpenAI's ChatCompletion
+    response = await loop.run_in_executor(None, lambda: openai.ChatCompletion.create(
+        model=bot_model,
+        max_tokens=546,
+        chat_prompt_size=550,
+        messages=messages
+    ))
+    response_text = response['choices'][0]['message']['content'].replace('</s>', '')
+    # Add assistant's response to conversation history
+    conversation.add_message("assistant", response_text)
+    return response
+
+# Example usage:
+# response = await generate_chat_response('gpt-4-model', 'Assistant', 'player.txt', 'path/to/history.json', 'Hello, how are you?', asyncio.get_event_loop()) 
 def start_bot(discord_api_key, openai_api_key, bot_role, bot_model, openai_server, txt2img_api_url):
     openai.api_key = openai_api_key
     #SADTALKER_API_URL = txt2img_api_url.rsplit('/', 1)[0] + '/sadtalker'
@@ -176,7 +217,7 @@ def start_bot(discord_api_key, openai_api_key, bot_role, bot_model, openai_serve
         if message.author == client.user:
             return
         if message.content.startswith('!chat'):
-            print(f"received chat request")
+            print(f"received chat request!")
             loop = asyncio.get_event_loop()
             last_dmaster_message = conversation.get_last_dmaster()
             #old gTTs code, to be replaced with xtts-v2
@@ -189,67 +230,66 @@ def start_bot(discord_api_key, openai_api_key, bot_role, bot_model, openai_serve
                 speaker_wav="quorra.wav",
                 language="en")
             #generate some logging data for tts creation time
-            player_voice_time1 = time.time()
-            player_voice_time = player_voice_time1 - start_time
-            
-            await run_player_facegen()
-            #generate logging data for player facegen
-            player_facegen_time1 = time.time()
-            player_facegen_time = player_facegen_time1 - start_time
-            
             # write user message to player.txt
             with open('player.txt', 'w') as file:
                 file.write(message_content)
-            #next_last_dmaster_message = conversation.get_next_last_dmaster()
-            print("open player.txt")
-            with open('player.txt', 'r') as file:
-                last_player_text = file.read()
-            print("player.txt open, initiate response")
-            # Load the list of past messages from your JSON file
-            with open("history.json", "r") as file:
-                past_messages = json.load(file)
             
-            #past_messages.reverse()  # Reverse the list so the most recent messages are first
-            #    Prepare the list of messages for the Chat API
-            messages = [{"role": "system", "content" : bot_role}]
-            print(last_player_text)
-            total_tokens = len(last_player_text.split())
-            print(last_dmaster_message)
-            print(total_tokens)
-            total_tokens += len(last_dmaster_message.split())
-            print(message_content)
-            print(total_tokens)
-            total_tokens += len(message_content.split())
-            print(total_tokens)
-            for msg in past_messages:
-                msg_tokens = len(msg['content'].split())
-                # Check if adding this message would exceed the token limit
-                if total_tokens + msg_tokens > 1000:
-                    break  # If it would, stop adding messages
-                # Otherwise, add the message to the list
-                messages.append(msg)
-                total_tokens += msg_tokens
-                print(total_tokens)
-            # i think it was adding bot role twice
-            # messages.append({"role": "system", "content" : bot_role})
-            messages.append({"role": "user", "content":  message_content})
-            print("adding complete")
-            response = await loop.run_in_executor(None, lambda: openai.ChatCompletion.create(
-                model=bot_model,
-                max_tokens=546,
-                chat_prompt_size=550,
-                messages=messages
-                )
-            )                
-                
-            print("post chat create")
-            postchat_time1 = time.time()
-            postchat_time = postchat_time1 - start_time
-            response_text = response['choices'][0]['message']['content'].replace('</s>', '')
+            player_voice_time = time.time() - start_time
             
+            await asyncio.gather(
+                generate_image(txt2img_api_url, message_content),
+                run_player_facegen(),
+                response = await generate_chat_response('gpt-4-model', 'Assistant', 'player.txt', 'history.json', message_content, asyncio.get_event_loop())
+            )
+             #generate logging data for player facegen
+            player_facegen_time = time.time() - start_time
+#--------------------------------------------------------------------------------------------------------------------------------------------------------
+            #next_last_dmaster_message = conversation.get_next_last_dmaster()            
+#            print("open player.txt")
+#            with open('player.txt', 'r') as file:
+#                last_player_text = file.read()
+#            print("player.txt open, initiate response")
+#            # Load the list of past messages from your JSON file
+#            with open("history.json", "r") as file:
+#                past_messages = json.load(file)
+#            
+#            #past_messages.reverse()  # Reverse the list so the most recent messages are first
+#            #    Prepare the list of messages for the Chat API
+#            messages = [{"role": "system", "content" : bot_role}]
+##            
+#            total_tokens = len(last_player_text.split())
+#            
+#            total_tokens += len(last_dmaster_message.split())
+#            
+#            total_tokens += len(message_content.split())
+#            
+#            
+#            for msg in past_messages:
+#                msg_tokens = len(msg['content'].split())
+#                # Check if adding this message would exceed the token limit
+#                if total_tokens + msg_tokens > 2048:
+#                    break  # If it would, stop adding messages
+#                # Otherwise, add the message to the list
+#                messages.append(msg)
+#                total_tokens += msg_tokens
+#                
+#            messages.append({"role": "user", "content":  message_content})
+#            
+#            response = await loop.run_in_executor(None, lambda: openai.ChatCompletion.create(
+#                model=bot_model,
+#                max_tokens=546,
+#                chat_prompt_size=550,
+#                messages=messages
+#                )
+#            )                
+            #-------------------------------------------------------------------------------------------------------------------------------------------------    
+            postchat_time = time.time() - start_time
+            #response_text = response['choices'][0]['message']['content'].replace('</s>', '')
+            # Add assistant's response to conversation history
+            #conversation.add_message("assistant", response_text)
             gif_filename='generated_image.png'           
             # Add assistant's response to conversation history
-            conversation.add_message("assistant", response_text)
+            #conversation.add_message("assistant", response_text)
             
             #old DMASTER tts
             #ttsdmaster = gTTS(text=response_text, lang='en',tld='co.uk')
@@ -281,8 +321,8 @@ def start_bot(discord_api_key, openai_api_key, bot_role, bot_model, openai_serve
             # Specify the header names
             headers = ['End Time', 'PlayerVoiceTime', 'PlayerFacegen', 'Post-Chat Time', 'unaccounted','Elapsed Time']
             #Check if the file already exists and has content
-            file_exists = os.path.isfile(file_path) and os.path.getsize(file_path) > 0 
-            unaccounted_time = elapsed time - (player_voice_time + player_facegen_time + postchat_time)
+            file_exists = os.path.isfile('log.csv') and os.path.getsize('log.csv') > 0 
+            unaccounted_time = elapsed_time - (player_voice_time + (player_facegen_time - player_voice_time) + (postchat_time - player_facegen_time - player_voice_time))
             with open('log.csv', 'a', newline='') as file:  # 'a' mode appends to the file
                 writer = csv.writer(file)
                 if not file_exists:
@@ -292,7 +332,7 @@ def start_bot(discord_api_key, openai_api_key, bot_role, bot_model, openai_serve
     client.run(discord_api_key)
 if __name__ == "__main__":
     defaults = load_defaults()
-
+    
     if defaults is None:
         bot_type = input("Enter bot type (DM or P1, press Enter for DM): ")
         openai_server = input("Enter OpenAI server (press Enter for http://127.0.0.1:5001/v1): ")
