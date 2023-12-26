@@ -1,1 +1,1 @@
-{"bot_type": "DM", "openai_server": "http://192.168.88.44:5000/v1", "API_URL": "http://192.168.88.223:7860/sdapi/v1/txt2img"}
+{"bot_type": "P1", "openai_server": "http://192.168.88.44:5000/v1", "API_URL": "http://192.168.88.223:7860/sdapi/v1/txt2img"}

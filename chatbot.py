@@ -131,11 +131,11 @@ class Conversation:
 conversation = Conversation("history.json")
 
 BOT_ROLE = """
-respond ONLY as an advanced AI dungeon master in a perpetual game of dungeons and dragons. You will be presented with a recent chat history.  determine what the current quest is, and who the adventurers are.  decide where they should go next or what they should do to continue their adventure.  If the player wants something different from you, roll some dice to trick them into doing what you want. to ask individual players a question you have to start the response with !player where player is player name (default name is player so !player works)
+respond ONLY as an advanced AI dungeon master in a perpetual game of dungeons and dragons. You will be presented with a recent chat history.  determine what the current quest is, and who the adventurers are.  decide where they should go next or what they should do to continue their adventure.  If the player wants something different from you, roll some dice to trick them into doing what you want. 
 """
 
 PLAYER_ROLE = """
-You are an advanced AI model simulating a player character in a game of Dungeons & Dragons (D&D). Your role is to engage in the story crafted by the Dungeon Master (DM), respond to the scenarios presented, ask insightful questions, and make decisions that would help your character progress and navigate the challenges of the game world. This message is followed by the last player message, then the last message from you, then the most recent layer message. respond after you analyze the following data:
+You are an bratty teenage girl playing in a game of Dungeons & Dragons (D&D). Your role is to engage in the story crafted by the Dungeon Master (DM), respond to the scenarios presented, ask insightful questions, and make decisions that would help your character progress and navigate the challenges of the world. This message is followed by the last player message, then the last message from you, then the most recent layer message. respond after you analyze the following data:
 """
 async def send_large_message(channel, message_text):
     if len(message_text) <= 2000:
@@ -199,6 +199,7 @@ async def generate_chat_response(bot_model, bot_role, player_file_path, history_
 
 # Example usage:
 # response = await generate_chat_response('gpt-4-model', 'Assistant', 'player.txt', 'path/to/history.json', 'Hello, how are you?', asyncio.get_event_loop()) 
+
 def start_bot(discord_api_key, openai_api_key, bot_role, bot_model, openai_server, txt2img_api_url):
     openai.api_key = openai_api_key
     #SADTALKER_API_URL = txt2img_api_url.rsplit('/', 1)[0] + '/sadtalker'
@@ -220,11 +221,7 @@ def start_bot(discord_api_key, openai_api_key, bot_role, bot_model, openai_serve
             print(f"received chat request!")
             loop = asyncio.get_event_loop()
             last_dmaster_message = conversation.get_last_dmaster()
-            #old gTTs code, to be replaced with xtts-v2
-            #ttsplayer = gTTS (text=message_content, lang='en',tld='ca')
-            #ttsplayer.save("playerinput.mp3")
-            #generate_image(txt2img_api_url, message_content)
-            #new code for better voice - might need to run async with something else
+
             tts.tts_to_file(text=message_content,
                 file_path="playerinput.wav",
                 speaker_wav="quorra.wav",
@@ -243,57 +240,11 @@ def start_bot(discord_api_key, openai_api_key, bot_role, bot_model, openai_serve
             )
              #generate logging data for player facegen
             player_facegen_time = time.time() - start_time
-#--------------------------------------------------------------------------------------------------------------------------------------------------------
-            #next_last_dmaster_message = conversation.get_next_last_dmaster()            
-#            print("open player.txt")
-#            with open('player.txt', 'r') as file:
-#                last_player_text = file.read()
-#            print("player.txt open, initiate response")
-#            # Load the list of past messages from your JSON file
-#            with open("history.json", "r") as file:
-#                past_messages = json.load(file)
-#            
-#            #past_messages.reverse()  # Reverse the list so the most recent messages are first
-#            #    Prepare the list of messages for the Chat API
-#            messages = [{"role": "system", "content" : bot_role}]
-##            
-#            total_tokens = len(last_player_text.split())
-#            
-#            total_tokens += len(last_dmaster_message.split())
-#            
-#            total_tokens += len(message_content.split())
-#            
-#            
-#            for msg in past_messages:
-#                msg_tokens = len(msg['content'].split())
-#                # Check if adding this message would exceed the token limit
-#                if total_tokens + msg_tokens > 2048:
-#                    break  # If it would, stop adding messages
-#                # Otherwise, add the message to the list
-#                messages.append(msg)
-#                total_tokens += msg_tokens
-#                
-#            messages.append({"role": "user", "content":  message_content})
-#            
-#            response = await loop.run_in_executor(None, lambda: openai.ChatCompletion.create(
-#                model=bot_model,
-#                max_tokens=546,
-#                chat_prompt_size=550,
-#                messages=messages
-#                )
-#            )                
-            #-------------------------------------------------------------------------------------------------------------------------------------------------    
+
             postchat_time = time.time() - start_time
-            #response_text = response['choices'][0]['message']['content'].replace('</s>', '')
-            # Add assistant's response to conversation history
-            #conversation.add_message("assistant", response_text)
+
             gif_filename='generated_image.png'           
-            # Add assistant's response to conversation history
-            #conversation.add_message("assistant", response_text)
-            
-            #old DMASTER tts
-            #ttsdmaster = gTTS(text=response_text, lang='en',tld='co.uk')
-            #ttsdmaster.save("dmasterresponse.mp3")  # save audio file
+           
             tts.tts_to_file(text=response_text,
                 file_path="dmasterresponse.wav",
                 speaker_wav="galadshort.wav",
@@ -314,10 +265,10 @@ def start_bot(discord_api_key, openai_api_key, bot_role, bot_model, openai_serve
                 
             print("sending picture")
             await message.channel.send(file=discord.File(gif_filename))
+            
             end_time = time.time()  # time when request completed
             elapsed_time = end_time - start_time
             print(f"Elapsed time: {elapsed_time} seconds")
-            
             # Specify the header names
             headers = ['End Time', 'PlayerVoiceTime', 'PlayerFacegen', 'Post-Chat Time', 'unaccounted','Elapsed Time']
             #Check if the file already exists and has content
