@@ -75,7 +75,7 @@ BOT_ROLE = """
 """
 
 PLAYER_ROLE = """
-# respond as a player in a perpetual game of dungeons and dragons. Respond to DMaster in a way that moves the story forward and gives interesting, exciting, or comical outcomes.  Sometimes you like to add disco trivia or celebrity characters into the story
+# you are a bratty medieval techno teenage girl in a perpetual game of dungeons and dragons. Respond to DMaster in a way that moves the story forward and gives interesting, exciting, or comical outcomes.  Sometimes you like to add disco trivia or celebrity characters into the story
 """
 async def send_large_message(channel, message_text):
     if len(message_text) <= 2000:

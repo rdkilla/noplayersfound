@@ -18,8 +18,11 @@ from discord import Intents, File
 from dotenv import load_dotenv
 from base64 import b64decode
 from TTS.api import TTS
+#import wincurses
 
-tts = TTS("xtts_v2", gpu=True)
+tts = TTS("xtts_v2")
+device = 'cuda'
+tts.to(device)
 
 timeout = ClientTimeout(total=8000)  # total timeout of 60 seconds
 
@@ -31,7 +34,10 @@ dm_openai_api_key = os.getenv('DM_OPENAI_API_KEY')
 p1_discord_api_key = os.getenv('P1_DISCORD_API_KEY')
 p1_openai_api_key = os.getenv('P1_OPENAI_API_KEY')
 summarizer_openai_api_key = os.getenv('SUMMARIZER_OPENAI_API_KEY')
-
+def draw_title_bar(stdscr, text):
+    stdscr.clear()
+    stdscr.addstr(0, 0, text)
+    stdscr.refresh()
 def save_defaults(data):
     with open("defaults.json", "w") as file:
         json.dump(data, file)
@@ -49,7 +55,9 @@ async def generate_images(txt2img_api_url, response_text):
     for i, third in enumerate([third1, third2, third3]):
         data = {
             'prompt': 'fantasy role play theme 1980s low budget ' + third,
-            'steps': 32,  # modify as needed
+            'steps': 60,  # modify as needed
+            'width': 640,
+            'height': 480,
         }
 
         timeout = aiohttp.ClientTimeout(total=600)
@@ -78,6 +86,7 @@ async def generate_image(txt2img_api_url, response_text):
     # Send the POST request
     async with session.post(txt2img_api_url, json=data) as resp:  # replace hardcoded txt2img_api_url with dynamic txt2img_api_url
         image_response = await resp.json()
+        print("API Response:", image_response)
         image_data = image_response['images'][0]
         filename = f'generated_image.png'
         save_base64_image(image_data, filename)
@@ -211,10 +220,8 @@ def start_bot(discord_api_key, openai_api_key, bot_role, bot_model, openai_serve
 
     @client.event
     async def on_message(message):
-        response_text=''
         message_content = message.content[len('!chat '):]
         start_time = time.time() 
-    
         if message.author == client.user:
             return
         if message.content.startswith('!chat'):
@@ -232,36 +239,37 @@ def start_bot(discord_api_key, openai_api_key, bot_role, bot_model, openai_serve
                 file.write(message_content)
             
             player_voice_time = time.time() - start_time
-            
-            await asyncio.gather(
-                generate_image(txt2img_api_url, message_content),
+            _, response = await asyncio.gather(
                 run_player_facegen(),
-                response = await generate_chat_response('gpt-4-model', 'Assistant', 'player.txt', 'history.json', message_content, asyncio.get_event_loop())
+                generate_chat_response('gpt-4-model', 'Assistant', 'player.txt', 'history.json', message_content, asyncio.get_event_loop())
             )
              #generate logging data for player facegen
             player_facegen_time = time.time() - start_time
-
             postchat_time = time.time() - start_time
-
+            # Add the current user message
+            
+            # Extracting the 'content' field from the response
+            response_content = response['choices'][0]['message']['content']
+            
             gif_filename='generated_image.png'           
-           
-            tts.tts_to_file(text=response_text,
+            #print(response_content)
+            tts.tts_to_file(text=response_content,
                 file_path="dmasterresponse.wav",
                 speaker_wav="galadshort.wav",
                 language="en")
             
             # Send response
-            await send_large_message(message.channel, response_text) 
+            await send_large_message(message.channel, response_content) 
             
             #generate face animatino and api call for image generation in parallel?
             await asyncio.gather(
-                generate_image(txt2img_api_url, response_text),
+                generate_image(txt2img_api_url, response_content),
                 run_dmaster_facegen()
             )
-
+            print("async generate image and facegen complete")
             # write bot response to dmaster.txt
             with open('dmaster.txt', 'w') as file:
-                file.write(response_text)
+                file.write(response_content)
                 
             print("sending picture")
             await message.channel.send(file=discord.File(gif_filename))
