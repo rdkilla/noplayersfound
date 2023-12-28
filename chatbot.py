@@ -55,9 +55,9 @@ async def generate_images(txt2img_api_url, response_text):
     for i, third in enumerate([third1, third2, third3]):
         data = {
             'prompt': 'fantasy role play theme 1980s low budget ' + third,
-            'steps': 60,  # modify as needed
-            'width': 640,
-            'height': 480,
+            'steps': 50,  # modify as needed
+            'width': 1024,
+            'height': 1024,
         }
 
         timeout = aiohttp.ClientTimeout(total=600)
@@ -76,9 +76,9 @@ async def generate_images(txt2img_api_url, response_text):
 async def generate_image(txt2img_api_url, response_text): 
     data = {
         'prompt': 'fantasy role play theme 1980s low budget ' + response_text,
-        'steps': 60,  # modify as needed
-        'width': 640,
-        'height': 480,
+        'steps': 50,  # modify as needed
+        'width': 1024,
+        'height': 1024,
     }
 
     timeout = aiohttp.ClientTimeout(total=600)
@@ -251,7 +251,7 @@ def start_bot(discord_api_key, openai_api_key, bot_role, bot_model, openai_serve
             # Extracting the 'content' field from the response
             response_content = response['choices'][0]['message']['content']
             
-            gif_filename='generated_image.png'           
+            gif_filename='generated_image_1.png'           
             #print(response_content)
             tts.tts_to_file(text=response_content,
                 file_path="dmasterresponse.wav",
@@ -263,7 +263,7 @@ def start_bot(discord_api_key, openai_api_key, bot_role, bot_model, openai_serve
             
             #generate face animatino and api call for image generation in parallel?
             await asyncio.gather(
-                generate_image(txt2img_api_url, response_content),
+                generate_images(txt2img_api_url, response_content),
                 run_dmaster_facegen()
             )
             print("async generate image and facegen complete")
